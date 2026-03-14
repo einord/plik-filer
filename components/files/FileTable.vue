@@ -42,9 +42,6 @@ function formatSize(bytes: number): string {
 <template>
   <div class="file-list">
     <div class="file-list-header">
-      <div class="file-col-check">
-        <input type="checkbox" :checked="selectedIds.size === files.length && files.length > 0" @change="$emit('toggleSelectAll')" />
-      </div>
       <div class="file-col-thumb"></div>
       <div class="file-col-name">{{ $t('files.fileName') }}</div>
       <div class="file-col-size">{{ $t('files.fileSize') }}</div>
@@ -57,11 +54,8 @@ function formatSize(bytes: number): string {
       :key="file.id"
       class="file-row"
       :class="{ selected: selectedIds.has(file.id), 'file-missing': file.missing }"
+      @click="$emit('toggleSelect', file.id)"
     >
-      <div class="file-col-check">
-        <input type="checkbox" :checked="selectedIds.has(file.id)" @change="$emit('toggleSelect', file.id)" />
-      </div>
-
       <div class="file-col-thumb">
         <div v-if="file.missing" class="file-icon file-icon-missing">
           <HugeiconsIcon :icon="Alert02Icon" :size="24" />
@@ -84,7 +78,7 @@ function formatSize(bytes: number): string {
         <button
           v-if="file.isDirectory"
           class="folder-link"
-          @click="$emit('navigateFolder', file.id, file.filename)"
+          @click.stop="$emit('navigateFolder', file.id, file.filename)"
         >
           {{ file.filename }}
         </button>
@@ -100,7 +94,7 @@ function formatSize(bytes: number): string {
         {{ file.createdAt ? new Date(file.createdAt).toLocaleDateString() : '' }}
       </div>
 
-      <div class="file-col-actions">
+      <div class="file-col-actions" @click.stop>
         <PBtn
           v-if="canShare && !file.isDirectory && !file.missing"
           variant="ghost"
@@ -142,7 +136,7 @@ function formatSize(bytes: number): string {
 
 .file-list-header {
   display: grid;
-  grid-template-columns: 40px 48px 1fr 100px 120px 110px;
+  grid-template-columns: 48px 1fr 100px 120px 110px;
   padding: var(--space-2) var(--space-3);
   background-color: var(--bg-secondary);
   font-size: var(--text-xs);
@@ -155,12 +149,14 @@ function formatSize(bytes: number): string {
 
 .file-row {
   display: grid;
-  grid-template-columns: 40px 48px 1fr 100px 120px 110px;
+  grid-template-columns: 48px 1fr 100px 120px 110px;
   padding: var(--space-2) var(--space-3);
   align-items: center;
   border-bottom: 1px solid var(--border-color);
   transition: background-color var(--transition-fast);
   font-size: var(--text-sm);
+  cursor: pointer;
+  user-select: none;
 }
 
 .file-row:last-child {
@@ -192,12 +188,6 @@ function formatSize(bytes: number): string {
 
 .dark .file-row.selected {
   background-color: rgba(59, 130, 246, 0.1);
-}
-
-.file-col-check {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .file-col-thumb {
@@ -257,7 +247,7 @@ function formatSize(bytes: number): string {
 @media (max-width: 768px) {
   .file-list-header,
   .file-row {
-    grid-template-columns: 40px 40px 1fr 80px 60px;
+    grid-template-columns: 40px 1fr 80px 60px;
   }
   .file-col-modified {
     display: none;

@@ -482,17 +482,6 @@ onMounted(() => {
       @dragleave="dragOver = false"
       @drop.prevent="handleDrop"
     >
-      <SelectionBar
-        v-if="selectedIds.size > 0"
-        :count="selectedIds.size"
-        :can-share="true"
-        :can-write="true"
-        @download="downloadSelected"
-        @share="openShareDialog(Array.from(selectedIds))"
-        @delete="deleteSelected"
-        @deselect="selectedIds.clear()"
-      />
-
       <!-- Loading -->
       <div v-if="loading" class="empty-state">
         {{ $t('common.loading') }}
@@ -518,6 +507,17 @@ onMounted(() => {
         <p>{{ $t('files.noFiles') }}</p>
         <p class="empty-hint">{{ $t('files.dragAndDrop') }}</p>
       </div>
+
+      <SelectionBar
+        v-if="selectedIds.size > 0"
+        :count="selectedIds.size"
+        :can-share="true"
+        :can-write="true"
+        @download="downloadSelected"
+        @share="openShareDialog(Array.from(selectedIds))"
+        @delete="deleteSelected"
+        @deselect="selectedIds.clear()"
+      />
 
       <!-- Drag overlay -->
       <div v-if="dragOver" class="drag-overlay">

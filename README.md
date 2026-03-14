@@ -118,6 +118,22 @@ server {
 }
 ```
 
+**Nginx Proxy Manager:**
+
+If you use [Nginx Proxy Manager](https://nginxproxymanager.com), create a proxy host pointing to your server's IP on port 3000 with SSL enabled, then add the following under the **Advanced** tab:
+
+```nginx
+client_max_body_size 0;
+
+location / {
+    proxy_buffering off;
+    proxy_request_buffering off;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+}
+```
+
 > **Important:** Set `client_max_body_size 0;` to disable nginx's upload limit — file size limits are enforced by the app itself.
 
 ## Environment variables

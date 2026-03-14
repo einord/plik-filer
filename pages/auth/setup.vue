@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { HugeiconsIcon } from '@hugeicons/vue'
-import { ViewIcon, ViewOffIcon } from '@hugeicons/core-free-icons'
+import { ViewIcon, ViewOffIcon, Key01Icon } from '@hugeicons/core-free-icons'
 
 definePageMeta({ layout: 'auth' })
 
@@ -8,6 +8,7 @@ const { t } = useI18n()
 const route = useRoute()
 const { setupAccount } = useAuth()
 const { checkStrength, generatePassword } = usePasswordStrength()
+const { createCredential } = useWebAuthn()
 
 const token = route.query.token as string
 
@@ -15,6 +16,7 @@ const form = reactive({ email: '', password: '', confirmPassword: '' })
 const userName = ref('')
 const error = ref('')
 const loading = ref(false)
+const passkeyLoading = ref(false)
 const pageLoading = ref(true)
 const showPassword = ref(false)
 
@@ -61,6 +63,105 @@ async function handleSubmit() {
   }
 }
 
+function _base64urlToBuffer(base64url: string): ArrayBuffer {
+  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = base64 + '='.repeat((4 - base64.length % 4) % 4)
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes.buffer
+}
+
+function _bufferToBase64url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+let passkeyInProgress = false
+
+async function handlePasskeySetup() {
+  if (passkeyInProgress) return
+  if (!form.email) {
+    error.value = t('accountSetup.emailRequired')
+    return
+  }
+
+  passkeyInProgress = true
+  passkeyLoading.value = true
+  error.value = ''
+
+  try {
+    // Step 1: Complete setup with email only (no password) — this logs us in
+    await setupAccount(token, form.email)
+
+    // Step 2: Get passkey registration options (now authenticated)
+    const options = await $fetch('/api/auth/passkey/register-options', { method: 'POST' })
+
+    // Step 3: Build PublicKeyCredentialCreationOptions
+    const publicKey: PublicKeyCredentialCreationOptions = {
+      challenge: _base64urlToBuffer(options.challenge),
+      rp: { name: options.rp.name, id: options.rp.id },
+      user: {
+        id: _base64urlToBuffer(options.user.id),
+        name: options.user.name,
+        displayName: options.user.displayName,
+      },
+      pubKeyCredParams: options.pubKeyCredParams,
+      timeout: options.timeout || 60000,
+      attestation: options.attestation || 'none',
+      authenticatorSelection: options.authenticatorSelection,
+    }
+    if (options.excludeCredentials) {
+      publicKey.excludeCredentials = options.excludeCredentials.map((c: any) => ({
+        id: _base64urlToBuffer(c.id),
+        type: 'public-key' as const,
+        transports: c.transports,
+      }))
+    }
+
+    // Step 4: Create credential via browser
+    const credential = await createCredential(publicKey)
+    if (!credential) {
+      // User cancelled, but account is already set up with email — redirect
+      await navigateTo('/files')
+      return
+    }
+
+    // Step 5: Verify and store passkey
+    const response = credential.response as AuthenticatorAttestationResponse
+    const registrationResponse = {
+      id: credential.id,
+      rawId: _bufferToBase64url(credential.rawId),
+      type: credential.type,
+      response: {
+        attestationObject: _bufferToBase64url(response.attestationObject),
+        clientDataJSON: _bufferToBase64url(response.clientDataJSON),
+        transports: response.getTransports?.() || [],
+      },
+      clientExtensionResults: credential.getClientExtensionResults(),
+    }
+
+    await $fetch('/api/auth/passkey/register-verify', {
+      method: 'POST',
+      body: { ...registrationResponse, challengeKey: (options as any).challengeKey },
+    })
+
+    await navigateTo('/files')
+  } catch (e: any) {
+    if (e.name === 'NotAllowedError' || e.name === 'AbortError') {
+      // User cancelled passkey — account is set up, just redirect
+      await navigateTo('/files')
+    } else {
+      error.value = e.data?.statusMessage || e.message || t('errors.serverError')
+    }
+  } finally {
+    passkeyLoading.value = false
+    passkeyInProgress = false
+  }
+}
+
 // Load setup info
 onMounted(async () => {
   if (!token) {
@@ -98,16 +199,34 @@ onMounted(async () => {
         {{ $t('accountSetup.welcomeMessage', { name: userName }) }}
       </p>
 
+      <div v-if="error" class="error-message">
+        {{ error }}
+      </div>
+
+      <!-- Email field (shared between both methods) -->
+      <div class="form-group">
+        <label for="email">{{ $t('auth.email') }}</label>
+        <input id="email" v-model="form.email" type="email" required autocomplete="email" />
+      </div>
+
+      <!-- Passkey option -->
+      <PBtn
+        size="lg"
+        block
+        :icon="Key01Icon"
+        :disabled="passkeyLoading || loading"
+        @click="handlePasskeySetup"
+      >
+        {{ passkeyLoading ? $t('common.loading') : $t('auth.usePasskey') }}
+      </PBtn>
+      <p class="passkey-hint">{{ $t('auth.passkeyDescription') }}</p>
+
+      <div class="divider">
+        <span>{{ $t('auth.usePassword') }}</span>
+      </div>
+
+      <!-- Password form -->
       <form @submit.prevent="handleSubmit">
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
-
-        <div class="form-group">
-          <label for="email">{{ $t('auth.email') }}</label>
-          <input id="email" v-model="form.email" type="email" required autocomplete="email" />
-        </div>
-
         <div class="form-group">
           <label for="password">{{ $t('auth.password') }}</label>
           <div class="password-input">
@@ -145,7 +264,7 @@ onMounted(async () => {
         </div>
 
         <div style="margin-top: var(--space-4);">
-          <PBtn type="submit" size="lg" block :disabled="loading">
+          <PBtn type="submit" size="lg" block :disabled="loading || passkeyLoading">
             {{ loading ? $t('common.loading') : $t('accountSetup.completeSetup') }}
           </PBtn>
         </div>
@@ -208,5 +327,30 @@ onMounted(async () => {
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   margin-bottom: var(--space-4);
+}
+
+.passkey-hint {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-primary);
 }
 </style>

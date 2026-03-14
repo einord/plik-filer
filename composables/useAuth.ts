@@ -49,7 +49,7 @@ export function useAuth() {
     return result
   }
 
-  async function setupAccount(token: string, email: string, password: string) {
+  async function setupAccount(token: string, email: string, password?: string) {
     const result = await $fetch('/api/auth/setup', {
       method: 'POST',
       body: { token, email, password },

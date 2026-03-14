@@ -66,7 +66,8 @@
     "welcomeMessage": "Hi {name}! An account has been created for you.",
     "completeSetup": "Complete setup",
     "invalidToken": "Invalid or expired setup link.",
-    "setupComplete": "Your account is ready! You are now logged in."
+    "setupComplete": "Your account is ready! You are now logged in.",
+    "emailRequired": "Email is required"
   },
   "admin": {
     "dashboard": "Dashboard",
@@ -117,8 +118,8 @@
     "userName": "Name",
     "userEmail": "Email (optional)",
     "userCreated": "User created!",
-    "sendSetupLink": "Send setup link",
-    "copySetupLink": "Copy setup link",
+    "sendSetupLink": "Send new setup link",
+    "copySetupLink": "Create new setup link",
     "setupLinkSent": "Setup link sent!",
     "setupLinkCopied": "Setup link copied!",
     "setupLinkGenerated": "Setup link generated",

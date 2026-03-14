@@ -66,7 +66,8 @@
     "welcomeMessage": "Hej {name}! Ditt konto har skapats åt dig.",
     "completeSetup": "Slutför registrering",
     "invalidToken": "Ogiltig eller utgången setup-länk.",
-    "setupComplete": "Ditt konto är klart! Du är nu inloggad."
+    "setupComplete": "Ditt konto är klart! Du är nu inloggad.",
+    "emailRequired": "E-post krävs"
   },
   "admin": {
     "dashboard": "Kontrollpanel",
@@ -117,8 +118,8 @@
     "userName": "Namn",
     "userEmail": "E-post (valfritt)",
     "userCreated": "Användaren har skapats!",
-    "sendSetupLink": "Skicka setup-länk",
-    "copySetupLink": "Kopiera setup-länk",
+    "sendSetupLink": "Skicka ny setup-länk",
+    "copySetupLink": "Skapa ny setup-länk",
     "setupLinkSent": "Setup-länken har skickats!",
     "setupLinkCopied": "Setup-länken har kopierats!",
     "setupLinkGenerated": "Setup-länk genererad",

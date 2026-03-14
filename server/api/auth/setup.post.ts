@@ -5,8 +5,8 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { token, email, password } = body
 
-  if (!token || !email || !password) {
-    throw createError({ statusCode: 400, statusMessage: 'All fields are required' })
+  if (!token || !email) {
+    throw createError({ statusCode: 400, statusMessage: 'Email is required' })
   }
 
   const db = useDb()
@@ -21,10 +21,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Setup link has expired' })
   }
 
-  // Validate password strength
-  const strength = checkPasswordStrength(password)
-  if (strength.level === 'weak') {
-    throw createError({ statusCode: 400, statusMessage: 'Password is too weak' })
+  // Validate password strength (only if password provided)
+  let passwordHash = null
+  if (password) {
+    const strength = checkPasswordStrength(password)
+    if (strength.level === 'weak') {
+      throw createError({ statusCode: 400, statusMessage: 'Password is too weak' })
+    }
+    passwordHash = await hashPassword(password)
   }
 
   // Check if email already exists (by another user)
@@ -33,12 +37,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Email already registered' })
   }
 
-  const passwordHash = await hashPassword(password)
-
-  // Update user with email, password, and clear setup token
+  // Update user with email, optionally password, and clear setup token
   await db.update(users).set({
     email,
-    passwordHash,
+    ...(passwordHash ? { passwordHash } : {}),
     setupToken: null,
     setupTokenExpiresAt: null,
     updatedAt: new Date().toISOString(),

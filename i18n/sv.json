@@ -95,7 +95,16 @@
     "defaultMaxFileSize": "Standard max filstorlek",
     "storageUsage": "Lagring",
     "editQuota": "Ändra kvot",
-    "quotaUpdated": "Kvoten har uppdaterats"
+    "quotaUpdated": "Kvoten har uppdaterats",
+    "userFiles": "Filer för {name}",
+    "manageFiles": "Hantera filer",
+    "uploadToUser": "Ladda upp till användare",
+    "backToUsers": "Tillbaka till användare",
+    "overview": "Översikt",
+    "recentUploads": "Senaste uppladdningar",
+    "uploadedBy": "Uppladdad av {name}",
+    "noRecentUploads": "Inga senaste uppladdningar",
+    "activeShareLinks": "Aktiva delningslänkar"
   },
   "files": {
     "files": "Filer",
@@ -185,7 +194,16 @@
     "logoUrlHint": "Länk till din logotyp (rekommenderat: SVG eller PNG)",
     "domainName": "Domännamn",
     "domainNameHint": "T.ex. files.example.com",
-    "brandingUpdated": "Varumärkesinställningarna har uppdaterats."
+    "brandingUpdated": "Varumärkesinställningarna har uppdaterats.",
+    "uploadLogo": "Ladda upp logotyp",
+    "removeLogo": "Ta bort logotyp",
+    "logoRemoved": "Logotypen har tagits bort",
+    "logoUploaded": "Logotypen har laddats upp",
+    "logoRequirements": "PNG, SVG, JPG eller WEBP. Max 2 MB.",
+    "useUpload": "Ladda upp fil",
+    "useUrl": "Ange URL",
+    "currentLogo": "Nuvarande logotyp",
+    "noLogo": "Ingen logotyp"
   },
   "smtp": {
     "host": "SMTP-server",
@@ -221,6 +239,10 @@
     "days": "dagar",
     "ago": "sedan",
     "remaining": "kvar",
-    "lessThanMinute": "mindre än en minut"
+    "lessThanMinute": "mindre än en minut",
+    "justNow": "Just nu",
+    "minutesAgo": "{count} min sedan",
+    "hoursAgo": "{count} timmar sedan",
+    "daysAgo": "{count} dagar sedan"
   }
 }

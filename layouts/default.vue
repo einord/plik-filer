@@ -32,6 +32,24 @@ const themeIconComponent = computed(() => {
   if (colorMode.preference === 'light') return Sun02Icon
   return ComputerIcon
 })
+
+// Branding logo
+const brandingLogo = ref('')
+const brandingName = ref('')
+
+async function loadBranding() {
+  try {
+    const { branding } = await $fetch<{ branding: { serviceName: string; logoUrl: string; logoType: string } }>('/api/settings/branding')
+    brandingName.value = branding.serviceName || ''
+    if (branding.logoType === 'upload') {
+      brandingLogo.value = `/api/settings/logo?t=${Date.now()}`
+    } else if (branding.logoType === 'url' && branding.logoUrl) {
+      brandingLogo.value = branding.logoUrl
+    }
+  } catch {}
+}
+
+onMounted(loadBranding)
 </script>
 
 <template>
@@ -39,7 +57,8 @@ const themeIconComponent = computed(() => {
     <header class="app-header" v-if="isAuthenticated">
       <div class="header-content">
         <NuxtLink to="/files" class="logo">
-          {{ $t('common.appName') }}
+          <img v-if="brandingLogo" :src="brandingLogo" alt="Logo" class="header-logo" />
+          <span>{{ brandingName || $t('common.appName') }}</span>
         </NuxtLink>
 
         <nav class="nav-links">
@@ -108,6 +127,15 @@ const themeIconComponent = computed(() => {
   font-weight: 700;
   color: var(--text-primary);
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
 }
 
 .nav-links {

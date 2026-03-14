@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { HugeiconsIcon } from '@hugeicons/vue'
+import { Upload04Icon, Delete02Icon, Image02Icon } from '@hugeicons/core-free-icons'
+
 const { t } = useI18n()
 
 const activeTab = ref<'branding' | 'smtp'>('branding')
@@ -6,7 +9,12 @@ const success = ref('')
 const error = ref('')
 
 // Branding
-const branding = reactive({ serviceName: 'plik Filer', logoUrl: '', domainName: '' })
+const branding = reactive({ serviceName: 'plik Filer', logoUrl: '', domainName: '', logoType: 'none' as 'upload' | 'url' | 'none' })
+const logoInputMode = ref<'upload' | 'url'>('upload')
+const hasUploadedLogo = ref(false)
+const uploadedLogoUrl = ref('')
+const logoFileInput = ref<HTMLInputElement | null>(null)
+const uploading = ref(false)
 
 // SMTP
 const smtp = reactive({
@@ -14,6 +22,17 @@ const smtp = reactive({
   fromEmail: '', fromName: '', secure: true,
 })
 const testEmail = ref('')
+
+// Computed logo preview source
+const logoPreviewSrc = computed(() => {
+  if (branding.logoType === 'upload' && hasUploadedLogo.value) {
+    return uploadedLogoUrl.value
+  }
+  if (branding.logoType === 'url' && branding.logoUrl) {
+    return branding.logoUrl
+  }
+  return ''
+})
 
 async function loadSettings() {
   try {
@@ -25,12 +44,100 @@ async function loadSettings() {
     if (smtpData.smtp) {
       Object.assign(smtp, smtpData.smtp)
     }
+
+    // Check if an uploaded logo exists
+    await checkUploadedLogo()
+
+    // Set input mode based on current logoType
+    if (branding.logoType === 'url') {
+      logoInputMode.value = 'url'
+    } else {
+      logoInputMode.value = 'upload'
+    }
   } catch {}
+}
+
+async function checkUploadedLogo() {
+  try {
+    const res = await $fetch.raw('/api/settings/logo', { method: 'HEAD' })
+    hasUploadedLogo.value = res.ok
+    if (res.ok) {
+      // Add cache-busting query param
+      uploadedLogoUrl.value = `/api/settings/logo?t=${Date.now()}`
+    }
+  } catch {
+    hasUploadedLogo.value = false
+  }
+}
+
+async function uploadLogo(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  // Client-side validation
+  const allowedTypes = ['image/png', 'image/svg+xml', 'image/jpeg', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    error.value = t('errors.invalidFileType')
+    return
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    error.value = t('errors.fileTooLarge', { size: '2 MB' })
+    return
+  }
+
+  error.value = ''
+  success.value = ''
+  uploading.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append('logo', file)
+    await $fetch('/api/settings/logo', { method: 'POST', body: formData })
+    hasUploadedLogo.value = true
+    uploadedLogoUrl.value = `/api/settings/logo?t=${Date.now()}`
+    branding.logoType = 'upload'
+    success.value = t('branding.logoUploaded')
+  } catch {
+    error.value = t('errors.serverError')
+  } finally {
+    uploading.value = false
+    // Reset input so the same file can be re-selected
+    if (logoFileInput.value) {
+      logoFileInput.value.value = ''
+    }
+  }
+}
+
+async function removeLogo() {
+  error.value = ''
+  success.value = ''
+  try {
+    await $fetch('/api/settings/logo', { method: 'DELETE' })
+    hasUploadedLogo.value = false
+    uploadedLogoUrl.value = ''
+    if (branding.logoType === 'upload') {
+      branding.logoType = 'none'
+    }
+    success.value = t('branding.logoRemoved')
+  } catch {
+    error.value = t('errors.serverError')
+  }
 }
 
 async function saveBranding() {
   error.value = ''
   success.value = ''
+
+  // Determine logoType based on input mode
+  if (logoInputMode.value === 'upload' && hasUploadedLogo.value) {
+    branding.logoType = 'upload'
+  } else if (logoInputMode.value === 'url' && branding.logoUrl) {
+    branding.logoType = 'url'
+  } else {
+    branding.logoType = 'none'
+  }
+
   try {
     await $fetch('/api/settings/branding', { method: 'PUT', body: branding })
     success.value = t('branding.brandingUpdated')
@@ -68,7 +175,7 @@ onMounted(loadSettings)
 <template>
   <div>
     <div class="page-header">
-      <NuxtLink to="/admin" class="btn btn-ghost btn-sm">← {{ $t('common.back') }}</NuxtLink>
+      <NuxtLink to="/admin" class="btn btn-ghost btn-sm">&larr; {{ $t('common.back') }}</NuxtLink>
       <h1>{{ $t('admin.settings') }}</h1>
     </div>
 
@@ -100,11 +207,73 @@ onMounted(loadSettings)
           <input v-model="branding.serviceName" type="text" />
           <small>{{ $t('branding.serviceNameHint') }}</small>
         </div>
+
+        <!-- Logo section -->
         <div class="form-group">
-          <label>{{ $t('branding.logoUrl') }}</label>
-          <input v-model="branding.logoUrl" type="text" />
-          <small>{{ $t('branding.logoUrlHint') }}</small>
+          <label>{{ $t('branding.currentLogo') }}</label>
+
+          <!-- Logo preview -->
+          <div v-if="logoPreviewSrc" class="logo-preview">
+            <img :src="logoPreviewSrc" alt="Logo" class="logo-preview-img" />
+          </div>
+          <div v-else class="logo-placeholder">
+            <HugeiconsIcon :icon="Image02Icon" :size="32" />
+            <span>{{ $t('branding.noLogo') }}</span>
+          </div>
+
+          <!-- Logo input mode toggle -->
+          <div class="logo-mode-toggle">
+            <button
+              type="button"
+              class="btn btn-sm"
+              :class="logoInputMode === 'upload' ? 'btn-primary' : 'btn-ghost'"
+              @click="logoInputMode = 'upload'"
+            >
+              <HugeiconsIcon :icon="Upload04Icon" :size="16" />
+              {{ $t('branding.useUpload') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm"
+              :class="logoInputMode === 'url' ? 'btn-primary' : 'btn-ghost'"
+              @click="logoInputMode = 'url'"
+            >
+              {{ $t('branding.useUrl') }}
+            </button>
+          </div>
+
+          <!-- Upload mode -->
+          <div v-if="logoInputMode === 'upload'" class="logo-upload-area">
+            <div class="upload-zone" @click="logoFileInput?.click()">
+              <HugeiconsIcon :icon="Upload04Icon" :size="24" />
+              <span>{{ $t('branding.uploadLogo') }}</span>
+              <small>{{ $t('branding.logoRequirements') }}</small>
+            </div>
+            <input
+              ref="logoFileInput"
+              type="file"
+              accept=".png,.svg,.jpg,.jpeg,.webp"
+              style="display: none;"
+              @change="uploadLogo"
+            />
+            <button
+              v-if="hasUploadedLogo"
+              type="button"
+              class="btn btn-ghost btn-sm btn-danger"
+              @click="removeLogo"
+            >
+              <HugeiconsIcon :icon="Delete02Icon" :size="16" />
+              {{ $t('branding.removeLogo') }}
+            </button>
+          </div>
+
+          <!-- URL mode -->
+          <div v-if="logoInputMode === 'url'">
+            <input v-model="branding.logoUrl" type="text" :placeholder="$t('branding.logoUrlHint')" />
+            <small>{{ $t('branding.logoUrlHint') }}</small>
+          </div>
         </div>
+
         <div class="form-group">
           <label>{{ $t('branding.domainName') }}</label>
           <input v-model="branding.domainName" type="text" />
@@ -227,6 +396,86 @@ onMounted(loadSettings)
   gap: var(--space-2);
   cursor: pointer;
   font-size: var(--text-sm);
+}
+
+.logo-preview {
+  margin-bottom: var(--space-3);
+  padding: var(--space-4);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  display: inline-block;
+}
+
+.logo-preview-img {
+  max-height: 80px;
+  max-width: 300px;
+  object-fit: contain;
+}
+
+.logo-placeholder {
+  margin-bottom: var(--space-3);
+  padding: var(--space-6);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.logo-mode-toggle {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.logo-upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.upload-zone {
+  width: 100%;
+  padding: var(--space-6);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  transition: all var(--transition-fast);
+}
+
+.upload-zone:hover {
+  border-color: var(--color-primary-400);
+  color: var(--color-primary-600);
+  background-color: var(--color-primary-50);
+}
+
+.dark .upload-zone:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.upload-zone small {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.btn-danger {
+  color: var(--color-error);
+}
+
+.btn-danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 .success-message {

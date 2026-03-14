@@ -4,10 +4,10 @@ import { settings } from '../../database/schema'
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   const body = await readBody(event)
-  const { serviceName, logoUrl, domainName } = body
+  const { serviceName, logoUrl, domainName, logoType } = body
 
   const db = useDb()
-  const value = JSON.stringify({ serviceName, logoUrl, domainName })
+  const value = JSON.stringify({ serviceName, logoUrl, domainName, logoType: logoType || 'none' })
 
   const [existing] = await db.select().from(settings).where(eq(settings.key, 'branding'))
 

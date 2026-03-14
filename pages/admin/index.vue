@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { HugeiconsIcon } from '@hugeicons/vue'
-import { Delete02Icon, Settings02Icon, UserAdd01Icon } from '@hugeicons/core-free-icons'
+import { Delete02Icon, Settings02Icon, UserAdd01Icon, Folder01Icon, UserMultipleIcon, File02Icon, DatabaseIcon, Link04Icon } from '@hugeicons/core-free-icons'
 
 const { t } = useI18n()
 
@@ -14,16 +14,33 @@ const inviteResult = ref<{ url: string } | null>(null)
 const userStats = ref<Record<number, { totalFiles: number; totalUsed: number; maxFileSize: number }>>({})
 const editingQuotaUserId = ref<number | null>(null)
 const editQuotaValueGB = ref(100)
+const dashboardStats = ref<any>(null)
+
+function timeAgo(dateStr: string): string {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffMinutes = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMinutes < 1) return t('time.justNow')
+  if (diffMinutes < 60) return t('time.minutesAgo', { count: diffMinutes })
+  if (diffHours < 24) return t('time.hoursAgo', { count: diffHours })
+  return t('time.daysAgo', { count: diffDays })
+}
 
 async function loadData() {
   loading.value = true
   try {
-    const [usersData, invData] = await Promise.all([
+    const [usersData, invData, statsData] = await Promise.all([
       $fetch('/api/users'),
       $fetch('/api/users/invitations'),
+      $fetch('/api/admin/stats'),
     ])
     users.value = usersData.users
     invitations.value = invData.invitations
+    dashboardStats.value = statsData
 
     // Load storage stats for all users
     const statsPromises = usersData.users.map(async (u: any) => {
@@ -152,6 +169,65 @@ onMounted(loadData)
 
     <div v-if="error" class="error-message">{{ error }}</div>
 
+    <!-- Dashboard stats -->
+    <div v-if="dashboardStats && !loading" class="stats-grid">
+      <div class="stat-card card">
+        <div class="stat-icon stat-icon-users">
+          <HugeiconsIcon :icon="UserMultipleIcon" :size="22" />
+        </div>
+        <div class="stat-number">{{ dashboardStats.activeUsers }}/{{ dashboardStats.totalUsers }}</div>
+        <div class="stat-label">{{ $t('admin.activeUsers') }}</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-icon stat-icon-files">
+          <HugeiconsIcon :icon="File02Icon" :size="22" />
+        </div>
+        <div class="stat-number">{{ dashboardStats.totalFiles }}</div>
+        <div class="stat-label">{{ $t('admin.totalFiles') }}</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-icon stat-icon-storage">
+          <HugeiconsIcon :icon="DatabaseIcon" :size="22" />
+        </div>
+        <div class="stat-number">{{ formatSize(dashboardStats.totalStorage) }}</div>
+        <div class="stat-label">{{ $t('admin.totalStorage') }}</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-icon stat-icon-links">
+          <HugeiconsIcon :icon="Link04Icon" :size="22" />
+        </div>
+        <div class="stat-number">{{ dashboardStats.totalShareLinks }}</div>
+        <div class="stat-label">{{ $t('admin.activeShareLinks') }}</div>
+      </div>
+    </div>
+
+    <!-- Recent uploads -->
+    <div v-if="dashboardStats && !loading" class="card" style="margin-bottom: var(--space-4);">
+      <h2 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: var(--space-3);">
+        {{ $t('admin.recentUploads') }}
+      </h2>
+      <div v-if="dashboardStats.recentUploads.length === 0" class="empty-state" style="padding: var(--space-4);">
+        {{ $t('admin.noRecentUploads') }}
+      </div>
+      <div v-else class="recent-uploads-list">
+        <NuxtLink
+          v-for="file in dashboardStats.recentUploads"
+          :key="file.id"
+          :to="`/admin/users/${file.userId}/files`"
+          class="recent-upload-row"
+        >
+          <div class="recent-upload-info">
+            <span class="recent-upload-filename">{{ file.filename }}</span>
+            <span class="recent-upload-meta">{{ formatSize(file.size) }}</span>
+          </div>
+          <div class="recent-upload-right">
+            <span class="recent-upload-user">{{ file.userName }}</span>
+            <span class="recent-upload-time">{{ timeAgo(file.createdAt) }}</span>
+          </div>
+        </NuxtLink>
+      </div>
+    </div>
+
     <!-- Invite dialog -->
     <div v-if="showInvite" class="card" style="margin-bottom: var(--space-4);">
       <h3 style="margin-bottom: var(--space-3);">{{ $t('admin.createInvitation') }}</h3>
@@ -249,16 +325,22 @@ onMounted(loadData)
             </label>
           </div>
 
-          <div class="user-actions" v-if="u.role !== 'admin'">
-            <button
-              class="btn btn-ghost btn-sm"
-              @click="toggleUser(u.id, u.isActive)"
-            >
-              {{ u.isActive ? $t('admin.deactivateUser') : $t('admin.activateUser') }}
-            </button>
-            <button class="btn btn-ghost btn-sm btn-icon" @click="deleteUser(u.id)" :title="$t('common.delete')">
-              <HugeiconsIcon :icon="Delete02Icon" :size="18" />
-            </button>
+          <div class="user-actions">
+            <NuxtLink :to="`/admin/users/${u.id}/files`" class="btn btn-ghost btn-sm" :title="$t('admin.manageFiles')">
+              <HugeiconsIcon :icon="Folder01Icon" :size="18" />
+              {{ $t('admin.manageFiles') }}
+            </NuxtLink>
+            <template v-if="u.role !== 'admin'">
+              <button
+                class="btn btn-ghost btn-sm"
+                @click="toggleUser(u.id, u.isActive)"
+              >
+                {{ u.isActive ? $t('admin.deactivateUser') : $t('admin.activateUser') }}
+              </button>
+              <button class="btn btn-ghost btn-sm btn-icon" @click="deleteUser(u.id)" :title="$t('common.delete')">
+                <HugeiconsIcon :icon="Delete02Icon" :size="18" />
+              </button>
+            </template>
           </div>
         </div>
       </div>
@@ -377,6 +459,126 @@ onMounted(loadData)
   font-size: var(--text-xs);
   margin-top: var(--space-1);
   padding: 0;
+}
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  color: #fff;
+}
+
+.stat-icon-users { background-color: var(--color-primary-500); }
+.stat-icon-files { background-color: var(--color-success, #22c55e); }
+.stat-icon-storage { background-color: var(--color-warning, #f59e0b); }
+.stat-icon-links { background-color: var(--color-info, #3b82f6); }
+
+.stat-number {
+  font-size: var(--text-2xl, 1.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+/* Recent uploads */
+.recent-uploads-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-upload-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--border-color);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.15s ease;
+}
+
+.recent-upload-row:last-child {
+  border-bottom: none;
+}
+
+.recent-upload-row:hover {
+  background-color: var(--bg-secondary);
+}
+
+.recent-upload-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 1;
+}
+
+.recent-upload-filename {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-upload-meta {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.recent-upload-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.recent-upload-user {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.recent-upload-time {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary, var(--text-secondary));
+  min-width: 80px;
+  text-align: right;
 }
 
 .empty-state { text-align: center; padding: var(--space-8); color: var(--text-secondary); }

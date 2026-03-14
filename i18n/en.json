@@ -95,7 +95,16 @@
     "defaultMaxFileSize": "Default max file size",
     "storageUsage": "Storage",
     "editQuota": "Edit quota",
-    "quotaUpdated": "Quota updated"
+    "quotaUpdated": "Quota updated",
+    "userFiles": "Files for {name}",
+    "manageFiles": "Manage files",
+    "uploadToUser": "Upload to user",
+    "backToUsers": "Back to users",
+    "overview": "Overview",
+    "recentUploads": "Recent uploads",
+    "uploadedBy": "Uploaded by {name}",
+    "noRecentUploads": "No recent uploads",
+    "activeShareLinks": "Active share links"
   },
   "files": {
     "files": "Files",
@@ -185,7 +194,16 @@
     "logoUrlHint": "Link to your logo (recommended: SVG or PNG)",
     "domainName": "Domain name",
     "domainNameHint": "E.g. files.example.com",
-    "brandingUpdated": "Branding settings updated."
+    "brandingUpdated": "Branding settings updated.",
+    "uploadLogo": "Upload logo",
+    "removeLogo": "Remove logo",
+    "logoRemoved": "Logo removed",
+    "logoUploaded": "Logo uploaded",
+    "logoRequirements": "PNG, SVG, JPG or WEBP. Max 2 MB.",
+    "useUpload": "Upload file",
+    "useUrl": "Use URL",
+    "currentLogo": "Current logo",
+    "noLogo": "No logo"
   },
   "smtp": {
     "host": "SMTP server",
@@ -221,6 +239,10 @@
     "days": "days",
     "ago": "ago",
     "remaining": "remaining",
-    "lessThanMinute": "less than a minute"
+    "lessThanMinute": "less than a minute",
+    "justNow": "Just now",
+    "minutesAgo": "{count} min ago",
+    "hoursAgo": "{count} hours ago",
+    "daysAgo": "{count} days ago"
   }
 }

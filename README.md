@@ -120,21 +120,22 @@ server {
 
 **Nginx Proxy Manager:**
 
-If you use [Nginx Proxy Manager](https://nginxproxymanager.com), create a proxy host pointing to your server's IP on port 3000 with SSL enabled, then add the following under the **Advanced** tab:
+If you use [Nginx Proxy Manager](https://nginxproxymanager.com):
+
+1. Create a proxy host pointing to your server's IP on port 3000
+2. Enable SSL (e.g., Let's Encrypt) under the **SSL** tab
+3. Enable **Websockets Support** in the **Details** tab
+4. Add the following under the **Advanced** tab:
 
 ```nginx
 client_max_body_size 0;
-
-location / {
-    proxy_buffering off;
-    proxy_request_buffering off;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-}
+proxy_buffering off;
+proxy_request_buffering off;
 ```
 
-> **Important:** Set `client_max_body_size 0;` to disable nginx's upload limit — file size limits are enforced by the app itself.
+> **Note:** Do NOT add a `location /` block in the Advanced tab — it will override NPM's own proxy configuration and break routing.
+
+> **Important:** `client_max_body_size 0;` disables nginx's upload size limit — file size limits are enforced by the app itself.
 
 ## Environment variables
 

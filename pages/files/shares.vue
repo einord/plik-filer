@@ -36,7 +36,10 @@ async function copyLink(token: string) {
   await navigator.clipboard.writeText(url)
 }
 
+let loaded = false
 onMounted(async () => {
+  if (loaded) return
+  loaded = true
   await loadLinks()
 })
 </script>

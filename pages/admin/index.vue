@@ -5,14 +5,14 @@ import { Delete02Icon, Settings02Icon, UserAdd01Icon, Folder01Icon, UserMultiple
 const { t } = useI18n()
 
 const users = ref<any[]>([])
-const invitations = ref<any[]>([])
 const loading = ref(true)
 const error = ref('')
 const showCreateUser = ref(false)
 const newUserName = ref('')
 const newUserEmail = ref('')
 const createUserLoading = ref(false)
-const setupLinkResult = ref<{ url: string; userId: number } | null>(null)
+const setupLinkResult = ref<{ url: string; userId: number; emailSent: boolean } | null>(null)
+const linkCopied = ref(false)
 const userStats = ref<Record<number, { totalFiles: number; totalUsed: number; maxFileSize: number }>>({})
 const editingQuotaUserId = ref<number | null>(null)
 const editQuotaValueGB = ref(100)
@@ -34,14 +34,13 @@ function timeAgo(dateStr: string): string {
 
 async function loadData() {
   loading.value = true
+  error.value = ''
   try {
-    const [usersData, invData, statsData] = await Promise.all([
+    const [usersData, statsData] = await Promise.all([
       $fetch('/api/users'),
-      $fetch('/api/users/invitations'),
       $fetch('/api/admin/stats'),
     ])
     users.value = usersData.users
-    invitations.value = invData.invitations
     dashboardStats.value = statsData
 
     // Load storage stats for all users
@@ -118,12 +117,35 @@ async function sendSetupLink(userId: number) {
   try {
     const data = await $fetch(`/api/users/${userId}/setup-link`, {
       method: 'POST',
+      body: { sendEmail: true },
     })
-    setupLinkResult.value = { url: data.setupUrl, userId }
-    await navigator.clipboard.writeText(data.setupUrl)
+    setupLinkResult.value = { url: data.setupUrl, userId, emailSent: data.emailSent }
     await loadData()
   } catch (e: any) {
     error.value = e.data?.statusMessage || t('errors.serverError')
+  }
+}
+
+async function copySetupLink(userId: number) {
+  try {
+    const data = await $fetch(`/api/users/${userId}/setup-link`, {
+      method: 'POST',
+      body: { sendEmail: false },
+    })
+    setupLinkResult.value = { url: data.setupUrl, userId, emailSent: false }
+    await loadData()
+  } catch (e: any) {
+    error.value = e.data?.statusMessage || t('errors.serverError')
+  }
+}
+
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    linkCopied.value = true
+    setTimeout(() => { linkCopied.value = false }, 2000)
+  } catch {
+    // Clipboard not available
   }
 }
 
@@ -270,15 +292,17 @@ onMounted(loadData)
     <!-- Setup link result -->
     <div v-if="setupLinkResult" class="card" style="margin-bottom: var(--space-4);">
       <p style="font-size: var(--text-sm); color: var(--color-success); margin-bottom: var(--space-2);">
-        {{ $t('admin.setupLinkGenerated') }}
+        {{ setupLinkResult.emailSent ? $t('admin.setupLinkSent') : $t('admin.setupLinkGenerated') }}
       </p>
       <code style="font-size: var(--text-xs); word-break: break-all;">{{ setupLinkResult.url }}</code>
-      <p style="font-size: var(--text-xs); color: var(--text-secondary); margin-top: var(--space-1);">
-        {{ $t('common.copied') }}
-      </p>
-      <PBtn variant="ghost" size="sm" style="margin-top: var(--space-2);" @click="setupLinkResult = null">
-        {{ $t('common.close') }}
-      </PBtn>
+      <div style="display: flex; gap: var(--space-2); margin-top: var(--space-2);">
+        <PBtn size="sm" :icon="Copy01Icon" @click="copyToClipboard(setupLinkResult.url)">
+          {{ linkCopied ? $t('common.copied') : $t('share.copyLink') }}
+        </PBtn>
+        <PBtn variant="ghost" size="sm" @click="setupLinkResult = null">
+          {{ $t('common.close') }}
+        </PBtn>
+      </div>
     </div>
 
     <!-- Users list -->
@@ -358,7 +382,10 @@ onMounted(loadData)
             </div>
 
             <div class="user-actions">
-              <PBtn v-if="!u.setupCompleted" variant="ghost" size="sm" :icon="SentIcon" @click="sendSetupLink(u.id)" :title="$t('admin.sendSetupLink')">
+              <PBtn v-if="!u.setupCompleted" variant="ghost" size="sm" :icon="Copy01Icon" @click="copySetupLink(u.id)" :title="$t('admin.copySetupLink')">
+                {{ $t('admin.copySetupLink') }}
+              </PBtn>
+              <PBtn v-if="!u.setupCompleted && u.email" variant="ghost" size="sm" :icon="SentIcon" @click="sendSetupLink(u.id)" :title="$t('admin.sendSetupLink')">
                 {{ $t('admin.sendSetupLink') }}
               </PBtn>
               <PBtn variant="ghost" size="sm" :icon="Folder01Icon" :to="`/admin/users/${u.id}/files`" :title="$t('admin.manageFiles')">

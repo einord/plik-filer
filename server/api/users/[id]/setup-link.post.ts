@@ -30,14 +30,17 @@ export default defineEventHandler(async (event) => {
 
   const brandingResult = await db.select().from(settings).where(eq(settings.key, 'branding'))
   const branding = brandingResult.length ? JSON.parse(brandingResult[0].value) : {}
-  const config = useRuntimeConfig()
+  const requestOrigin = getRequestURL(event).origin
   const origin = branding.domainName
     ? `https://${branding.domainName}`
-    : config.origin || 'http://localhost:3000'
+    : requestOrigin
   const setupUrl = `${origin}/auth/setup?token=${setupToken}`
 
+  const body = await readBody(event).catch(() => ({}))
+  const shouldSendEmail = body?.sendEmail !== false
+
   let emailSent = false
-  if (user.email) {
+  if (shouldSendEmail && user.email) {
     const serviceName = branding.serviceName || 'plik Filer'
     emailSent = await sendSetupMail(user.email, setupUrl, serviceName)
   }

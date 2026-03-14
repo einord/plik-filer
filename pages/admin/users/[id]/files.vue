@@ -119,7 +119,7 @@ async function deleteFile(file: FileItem) {
   if (!confirm(msg)) return
 
   try {
-    await $fetch(`/api/admin/files/${file.id}`, { method: 'DELETE' })
+    await $fetch(`/api/admin/files/item/${file.id}`, { method: 'DELETE' })
     await loadFiles(currentFolderId.value)
     selectedIds.value.delete(file.id)
   } catch (e: any) {

@@ -165,7 +165,12 @@
     "downloadFile": "Download file",
     "label": "Label (optional)",
     "selectFiles": "Select files to share",
-    "linkCreated": "Share link created!"
+    "linkCreated": "Share link created!",
+    "shareFile": "Share file",
+    "shareSelected": "Share selected",
+    "sharingFiles": "Sharing {count} file(s)",
+    "linkReady": "Link is ready!",
+    "createLink": "Create link"
   },
   "settings": {
     "settings": "Settings",

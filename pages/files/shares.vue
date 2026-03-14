@@ -8,9 +8,6 @@ const { t } = useI18n()
 const links = ref<any[]>([])
 const loading = ref(true)
 const error = ref('')
-const showCreate = ref(false)
-const userFiles = ref<FileItem[]>([])
-const newLink = reactive({ label: '', daysValid: 7, fileIds: [] as number[] })
 
 async function loadLinks() {
   loading.value = true
@@ -21,33 +18,6 @@ async function loadLinks() {
     error.value = t('errors.serverError')
   } finally {
     loading.value = false
-  }
-}
-
-async function loadUserFiles() {
-  const data = await $fetch('/api/files')
-  userFiles.value = (data.files as FileItem[]).filter((f) => !f.isDirectory)
-}
-
-async function createLink() {
-  if (!newLink.fileIds.length) return
-  try {
-    const data = await $fetch('/api/shares', {
-      method: 'POST',
-      body: newLink,
-    })
-    showCreate.value = false
-    newLink.label = ''
-    newLink.daysValid = 7
-    newLink.fileIds = []
-    await loadLinks()
-
-    // Copy to clipboard
-    if (data.shareLink?.url) {
-      await navigator.clipboard.writeText(data.shareLink.url)
-    }
-  } catch (e: any) {
-    error.value = e.data?.statusMessage || t('errors.serverError')
   }
 }
 
@@ -62,20 +32,12 @@ async function deleteLink(id: number) {
 }
 
 async function copyLink(token: string) {
-  const config = useRuntimeConfig()
   const url = `${window.location.origin}/share/${token}`
   await navigator.clipboard.writeText(url)
 }
 
-function toggleFileId(id: number) {
-  const idx = newLink.fileIds.indexOf(id)
-  if (idx >= 0) newLink.fileIds.splice(idx, 1)
-  else newLink.fileIds.push(id)
-}
-
 onMounted(async () => {
   await loadLinks()
-  await loadUserFiles()
 })
 </script>
 
@@ -83,54 +45,6 @@ onMounted(async () => {
   <div>
     <div class="page-header">
       <h1>{{ $t('share.shareLinks') }}</h1>
-      <PBtn size="sm" @click="showCreate = true">
-        {{ $t('share.createShareLink') }}
-      </PBtn>
-    </div>
-
-    <!-- Create dialog -->
-    <div v-if="showCreate" class="card" style="margin-bottom: var(--space-4);">
-      <h3 style="margin-bottom: var(--space-4);">{{ $t('share.createShareLink') }}</h3>
-
-      <div class="form-group">
-        <label>{{ $t('share.label') }}</label>
-        <input v-model="newLink.label" type="text" />
-      </div>
-
-      <div class="form-group">
-        <label>{{ $t('share.daysValid') }}</label>
-        <input v-model.number="newLink.daysValid" type="number" min="1" max="90" />
-      </div>
-
-      <div class="form-group">
-        <label>{{ $t('share.selectFiles') }}</label>
-        <div class="file-select-list">
-          <label
-            v-for="file in userFiles"
-            :key="file.id"
-            class="file-select-item"
-          >
-            <input
-              type="checkbox"
-              :checked="newLink.fileIds.includes(file.id)"
-              @change="toggleFileId(file.id)"
-            />
-            <span>{{ file.filename }}</span>
-          </label>
-          <p v-if="!userFiles.length" style="color: var(--text-secondary); font-size: var(--text-sm);">
-            {{ $t('files.noFiles') }}
-          </p>
-        </div>
-      </div>
-
-      <div style="display: flex; gap: var(--space-2);">
-        <PBtn size="sm" @click="createLink" :disabled="!newLink.fileIds.length">
-          {{ $t('share.createShareLink') }}
-        </PBtn>
-        <PBtn variant="ghost" size="sm" @click="showCreate = false">
-          {{ $t('common.cancel') }}
-        </PBtn>
-      </div>
     </div>
 
     <div v-if="error" class="error-message">{{ error }}</div>
@@ -181,30 +95,6 @@ onMounted(async () => {
 .page-header h1 {
   font-size: var(--text-xl);
   font-weight: 700;
-}
-
-.form-group { margin-bottom: var(--space-4); }
-
-.file-select-list {
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: var(--space-2);
-}
-
-.file-select-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-}
-
-.file-select-item:hover {
-  background-color: var(--bg-secondary);
 }
 
 .links-list {

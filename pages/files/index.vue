@@ -14,6 +14,8 @@ import {
   Tick02Icon,
   Alert02Icon,
   Loading03Icon,
+  Share08Icon,
+  Copy01Icon,
 } from '@hugeicons/core-free-icons'
 
 const { t } = useI18n()
@@ -41,6 +43,63 @@ const newFolderName = ref('')
 const dragOver = ref(false)
 const error = ref('')
 const storageStats = ref<{ totalFiles: number; totalUsed: number; maxAllowed: number; percentage: number } | null>(null)
+
+// Share dialog state
+const showShareDialog = ref(false)
+const shareFileIds = ref<number[]>([])
+const shareLabel = ref('')
+const shareDaysValid = ref(7)
+const shareResult = ref<{ url: string } | null>(null)
+const shareLoading = ref(false)
+const shareCopied = ref(false)
+
+function openShareDialog(fileIds: number[]) {
+  shareFileIds.value = fileIds
+  shareLabel.value = ''
+  shareDaysValid.value = 7
+  shareResult.value = null
+  shareLoading.value = false
+  shareCopied.value = false
+  showShareDialog.value = true
+}
+
+async function createShareLink() {
+  if (!shareFileIds.value.length) return
+  shareLoading.value = true
+  try {
+    const data = await $fetch('/api/shares', {
+      method: 'POST',
+      body: {
+        fileIds: shareFileIds.value,
+        label: shareLabel.value || undefined,
+        daysValid: shareDaysValid.value,
+      },
+    })
+    if (data.shareLink?.url) {
+      shareResult.value = { url: data.shareLink.url }
+    }
+  } catch (e: any) {
+    error.value = e.data?.statusMessage || t('errors.serverError')
+  } finally {
+    shareLoading.value = false
+  }
+}
+
+async function copyShareUrl() {
+  if (!shareResult.value?.url) return
+  await navigator.clipboard.writeText(shareResult.value.url)
+  shareCopied.value = true
+}
+
+function closeShareDialog() {
+  showShareDialog.value = false
+  shareFileIds.value = []
+  shareLabel.value = ''
+  shareDaysValid.value = 7
+  shareResult.value = null
+  shareLoading.value = false
+  shareCopied.value = false
+}
 
 async function loadStorageStats() {
   try {
@@ -359,6 +418,51 @@ onMounted(() => {
       </form>
     </div>
 
+    <!-- Share dialog -->
+    <div v-if="showShareDialog" class="share-dialog card">
+      <template v-if="!shareResult">
+        <h3 class="share-dialog-title">{{ $t('share.sharingFiles', { count: shareFileIds.length }) }}</h3>
+
+        <div class="share-dialog-form">
+          <div class="form-group">
+            <label>{{ $t('share.label') }}</label>
+            <input v-model="shareLabel" type="text" :placeholder="$t('common.optional')" />
+          </div>
+
+          <div class="form-group">
+            <label>{{ $t('share.daysValid') }}</label>
+            <input v-model.number="shareDaysValid" type="number" min="1" max="90" />
+          </div>
+        </div>
+
+        <div class="share-dialog-actions">
+          <PBtn size="sm" @click="createShareLink" :disabled="shareLoading">
+            {{ $t('share.createLink') }}
+          </PBtn>
+          <PBtn variant="ghost" size="sm" @click="closeShareDialog">
+            {{ $t('common.cancel') }}
+          </PBtn>
+        </div>
+      </template>
+
+      <template v-else>
+        <h3 class="share-dialog-title share-dialog-success">{{ $t('share.linkReady') }}</h3>
+
+        <div class="share-link-result">
+          <input type="text" :value="shareResult.url" readonly class="share-link-input" />
+          <PBtn size="sm" :icon="Copy01Icon" @click="copyShareUrl">
+            {{ shareCopied ? $t('common.copied') : $t('common.copy') }}
+          </PBtn>
+        </div>
+
+        <div class="share-dialog-actions">
+          <PBtn variant="ghost" size="sm" @click="closeShareDialog">
+            {{ $t('common.close') }}
+          </PBtn>
+        </div>
+      </template>
+    </div>
+
     <!-- Error -->
     <div v-if="error" class="error-message">
       {{ error }}
@@ -379,6 +483,9 @@ onMounted(() => {
         <span>{{ $t('files.selected', { count: selectedIds.size }) }}</span>
         <PBtn size="sm" @click="downloadSelected">
           {{ $t('files.downloadSelected') }}
+        </PBtn>
+        <PBtn size="sm" variant="secondary" :icon="Share08Icon" @click="openShareDialog(Array.from(selectedIds))">
+          {{ $t('share.shareSelected') }}
         </PBtn>
         <PBtn variant="ghost" size="sm" @click="selectedIds.clear()">
           {{ $t('files.deselectAll') }}
@@ -448,6 +555,15 @@ onMounted(() => {
           </div>
 
           <div class="file-col-actions">
+            <PBtn
+              v-if="!file.isDirectory"
+              variant="ghost"
+              size="sm"
+              :icon="Share08Icon"
+              icon-only
+              @click="openShareDialog([file.id])"
+              :title="$t('share.shareFile')"
+            />
             <PBtn
               v-if="!file.isDirectory"
               variant="ghost"
@@ -785,7 +901,7 @@ onMounted(() => {
 
 .file-list-header {
   display: grid;
-  grid-template-columns: 40px 48px 1fr 100px 120px 80px;
+  grid-template-columns: 40px 48px 1fr 100px 120px 110px;
   padding: var(--space-2) var(--space-3);
   background-color: var(--bg-secondary);
   font-size: var(--text-xs);
@@ -798,7 +914,7 @@ onMounted(() => {
 
 .file-row {
   display: grid;
-  grid-template-columns: 40px 48px 1fr 100px 120px 80px;
+  grid-template-columns: 40px 48px 1fr 100px 120px 110px;
   padding: var(--space-2) var(--space-3);
   align-items: center;
   border-bottom: 1px solid var(--border-color);
@@ -907,6 +1023,60 @@ onMounted(() => {
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   margin-bottom: var(--space-4);
+}
+
+.share-dialog {
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.share-dialog-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+
+.share-dialog-success {
+  color: var(--color-success);
+}
+
+.share-dialog-form {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.share-dialog-form .form-group {
+  flex: 1;
+  min-width: 160px;
+}
+
+.share-dialog-form .form-group label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-1);
+}
+
+.share-dialog-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.share-link-result {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.share-link-input {
+  flex: 1;
+  font-size: var(--text-sm);
+  background-color: var(--bg-secondary);
+  cursor: text;
 }
 
 @media (max-width: 768px) {

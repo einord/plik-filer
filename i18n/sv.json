@@ -165,7 +165,12 @@
     "downloadFile": "Ladda ner fil",
     "label": "Etikett (valfritt)",
     "selectFiles": "Välj filer att dela",
-    "linkCreated": "Delningslänken har skapats!"
+    "linkCreated": "Delningslänken har skapats!",
+    "shareFile": "Dela fil",
+    "shareSelected": "Dela valda",
+    "sharingFiles": "Delar {count} fil(er)",
+    "linkReady": "Länken är redo!",
+    "createLink": "Skapa länk"
   },
   "settings": {
     "settings": "Inställningar",

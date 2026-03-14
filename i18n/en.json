@@ -184,6 +184,7 @@
     "removePasskey": "Remove passkey",
     "passkeyAdded": "Passkey added!",
     "passkeyRemoved": "Passkey removed.",
+    "passkeyConfirmMessage": "Your device will ask you to verify your identity (e.g., with fingerprint or Face ID). Follow the on-screen instructions to complete the registration.",
     "profileUpdated": "Profile updated.",
     "passwordChanged": "Password changed."
   },

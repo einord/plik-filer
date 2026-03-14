@@ -34,9 +34,14 @@ export default defineEventHandler(async (event) => {
     },
   })
 
-  // Store challenge keyed by a combination of user ID and a purpose tag
-  const challengeKey = `reg:${user.id}`
+  // Remove empty hints array — causes Safari to hang
+  if (Array.isArray((options as any).hints) && (options as any).hints.length === 0) {
+    delete (options as any).hints
+  }
+
+  // Store challenge with a unique key to avoid overwrites from multiple requests
+  const challengeKey = `reg:${user.id}:${Date.now()}`
   storeChallenge(challengeKey, options.challenge)
 
-  return options
+  return { ...options, challengeKey }
 })

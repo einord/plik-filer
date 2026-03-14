@@ -184,6 +184,7 @@
     "removePasskey": "Ta bort passkey",
     "passkeyAdded": "Passkey tillagd!",
     "passkeyRemoved": "Passkey borttagen.",
+    "passkeyConfirmMessage": "Din enhet kommer att be dig verifiera din identitet (t.ex. med fingeravtryck eller Face ID). Följ instruktionerna som visas för att slutföra registreringen.",
     "profileUpdated": "Profilen har uppdaterats.",
     "passwordChanged": "Lösenordet har bytts."
   },

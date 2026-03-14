@@ -28,34 +28,125 @@ async function loadPasskeys() {
   }
 }
 
+const showPasskeyConfirm = ref(false)
+
+function promptAddPasskey() {
+  showPasskeyConfirm.value = true
+}
+
+// AbortController for cancelling passkey operations
+let passkeyAbortController: AbortController | null = null
+
 async function addPasskey() {
+  showPasskeyConfirm.value = false
   passkeyLoading.value = true
   error.value = ''
   success.value = ''
 
+  // Create abort controller so we can cancel if needed
+  passkeyAbortController = new AbortController()
+
+  let options: any
   try {
-    // Get registration options
-    const options = await $fetch('/api/auth/passkey/register-options', { method: 'POST' })
+    options = await $fetch('/api/auth/passkey/register-options', { method: 'POST' })
+  } catch {
+    error.value = t('errors.serverError')
+    passkeyLoading.value = false
+    return
+  }
 
-    // Trigger browser WebAuthn dialog
-    const { startRegistration } = await import('@simplewebauthn/browser')
-    const registrationResponse = await startRegistration({ optionsJSON: options })
+  // Build clean PublicKeyCredentialCreationOptions
+  const publicKey: PublicKeyCredentialCreationOptions = {
+    rp: options.rp,
+    user: {
+      id: base64urlToBuffer(options.user.id),
+      name: options.user.name,
+      displayName: options.user.displayName,
+    },
+    challenge: base64urlToBuffer(options.challenge),
+    pubKeyCredParams: options.pubKeyCredParams,
+    timeout: options.timeout || 60000,
+    attestation: (options.attestation || 'none') as AttestationConveyancePreference,
+    authenticatorSelection: options.authenticatorSelection,
+    excludeCredentials: (options.excludeCredentials || []).map((c: any) => ({
+      id: base64urlToBuffer(c.id),
+      type: 'public-key' as const,
+      transports: c.transports,
+    })),
+  }
 
-    // Verify with server
+  let credential: PublicKeyCredential | null
+  try {
+    credential = await navigator.credentials.create({
+      publicKey,
+      signal: passkeyAbortController.signal,
+    }) as PublicKeyCredential | null
+  } catch (e: any) {
+    passkeyLoading.value = false
+    passkeyAbortController = null
+    // User cancelled — not an error
+    if (e.name === 'NotAllowedError' || e.name === 'AbortError') return
+    error.value = e.message || t('errors.serverError')
+    return
+  }
+
+  passkeyAbortController = null
+
+  if (!credential) {
+    passkeyLoading.value = false
+    return
+  }
+
+  try {
+    const response = credential.response as AuthenticatorAttestationResponse
+    const registrationResponse = {
+      id: credential.id,
+      rawId: bufferToBase64url(credential.rawId),
+      type: credential.type,
+      response: {
+        attestationObject: bufferToBase64url(response.attestationObject),
+        clientDataJSON: bufferToBase64url(response.clientDataJSON),
+        transports: response.getTransports?.() || [],
+      },
+      clientExtensionResults: credential.getClientExtensionResults(),
+    }
+
     await $fetch('/api/auth/passkey/register-verify', {
       method: 'POST',
-      body: registrationResponse,
+      body: { ...registrationResponse, challengeKey: options.challengeKey },
     })
 
     success.value = t('settings.passkeyAdded')
     await loadPasskeys()
   } catch (e: any) {
-    if (e.name !== 'NotAllowedError') {
-      error.value = e.data?.statusMessage || e.message || t('errors.serverError')
-    }
-  } finally {
-    passkeyLoading.value = false
+    error.value = e.data?.statusMessage || e.message || t('errors.serverError')
   }
+
+  passkeyLoading.value = false
+}
+
+function cancelPasskeyRegistration() {
+  if (passkeyAbortController) {
+    passkeyAbortController.abort()
+    passkeyAbortController = null
+  }
+  passkeyLoading.value = false
+}
+
+function base64urlToBuffer(base64url: string): ArrayBuffer {
+  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = base64 + '='.repeat((4 - base64.length % 4) % 4)
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes.buffer
+}
+
+function bufferToBase64url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 
 async function removePasskey(id: number) {
@@ -284,11 +375,22 @@ function handleLocaleChange(newLocale: string) {
         {{ $t('auth.passkeyDescription') }}
       </p>
 
+      <!-- Confirmation dialog before starting WebAuthn -->
+      <div v-if="showPasskeyConfirm" class="passkey-confirm card">
+        <p>{{ $t('settings.passkeyConfirmMessage') }}</p>
+        <div style="display: flex; gap: var(--space-2); margin-top: var(--space-3);">
+          <PBtn @click="addPasskey">{{ $t('common.confirm') }}</PBtn>
+          <PBtn variant="ghost" @click="showPasskeyConfirm = false">{{ $t('common.cancel') }}</PBtn>
+        </div>
+      </div>
+
       <PBtn
+        v-else
         :disabled="passkeyLoading"
-        @click="addPasskey"
+        :loading="passkeyLoading"
+        @click="promptAddPasskey"
       >
-        {{ passkeyLoading ? $t('common.loading') : $t('settings.addPasskey') }}
+        {{ $t('settings.addPasskey') }}
       </PBtn>
     </div>
   </div>
@@ -388,5 +490,12 @@ function handleLocaleChange(newLocale: string) {
 .passkey-actions {
   display: flex;
   gap: var(--space-2);
+}
+
+.passkey-confirm {
+  padding: var(--space-4);
+  background-color: var(--bg-secondary);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 </style>

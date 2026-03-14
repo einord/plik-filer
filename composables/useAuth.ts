@@ -55,8 +55,38 @@ export function useAuth() {
       body: { email },
     })
 
-    const { startAuthentication } = await import('@simplewebauthn/browser')
-    const authResponse = await startAuthentication({ optionsJSON: options })
+    // Call navigator.credentials.get directly to avoid Safari issues with dynamic imports
+    const publicKey: any = {
+      ...options,
+      challenge: _base64urlToBuffer(options.challenge),
+    }
+    if (publicKey.allowCredentials) {
+      publicKey.allowCredentials = publicKey.allowCredentials.map((c: any) => ({
+        ...c,
+        id: _base64urlToBuffer(c.id),
+      }))
+    }
+    // Remove non-WebAuthn fields
+    delete publicKey.challengeKey
+    delete publicKey.hints
+
+    const credential = await navigator.credentials.get({ publicKey }) as PublicKeyCredential
+    if (!credential) throw new Error('No credential returned')
+
+    const response = credential.response as AuthenticatorAssertionResponse
+
+    const authResponse = {
+      id: credential.id,
+      rawId: _bufferToBase64url(credential.rawId),
+      type: credential.type,
+      response: {
+        authenticatorData: _bufferToBase64url(response.authenticatorData),
+        clientDataJSON: _bufferToBase64url(response.clientDataJSON),
+        signature: _bufferToBase64url(response.signature),
+        userHandle: response.userHandle ? _bufferToBase64url(response.userHandle) : undefined,
+      },
+      clientExtensionResults: credential.getClientExtensionResults(),
+    }
 
     const result = await $fetch('/api/auth/passkey/auth-verify', {
       method: 'POST',
@@ -70,6 +100,22 @@ export function useAuth() {
       user.value = result.user as User
     }
     return result
+  }
+
+  function _base64urlToBuffer(base64url: string): ArrayBuffer {
+    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4)
+    const binary = atob(padded)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    return bytes.buffer
+  }
+
+  function _bufferToBase64url(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer)
+    let binary = ''
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
   }
 
   const isAuthenticated = computed(() => !!user.value)

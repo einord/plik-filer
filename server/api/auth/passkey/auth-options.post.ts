@@ -38,6 +38,11 @@ export default defineEventHandler(async (event) => {
     allowCredentials,
   })
 
+  // Remove empty hints array — causes Safari to hang
+  if (Array.isArray((options as any).hints) && (options as any).hints.length === 0) {
+    delete (options as any).hints
+  }
+
   // Use a random key for unauthenticated challenge storage
   const challengeKey = `auth:${nanoid(32)}`
   storeChallenge(challengeKey, options.challenge)

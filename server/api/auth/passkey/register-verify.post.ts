@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const origin = config.origin as string
   const rpID = new URL(origin).hostname
 
-  const challengeKey = `reg:${user.id}`
+  const challengeKey = body.challengeKey || `reg:${user.id}`
   const expectedChallenge = getChallenge(challengeKey)
 
   if (!expectedChallenge) {

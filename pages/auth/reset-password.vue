@@ -55,9 +55,9 @@ if (!token) navigateTo('/auth/login')
       <p style="color: var(--color-success); margin-bottom: var(--space-4);">
         {{ $t('settings.passwordChanged') }}
       </p>
-      <NuxtLink to="/auth/login" class="btn btn-primary">
+      <PBtn to="/auth/login">
         {{ $t('auth.login') }}
-      </NuxtLink>
+      </PBtn>
     </div>
 
     <form v-else @submit.prevent="handleSubmit">
@@ -79,9 +79,9 @@ if (!token) navigateTo('/auth/login')
         <input id="confirm" v-model="form.confirmPassword" type="password" required autocomplete="new-password" />
       </div>
 
-      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;" :disabled="loading">
+      <PBtn type="submit" size="lg" block :disabled="loading">
         {{ loading ? $t('common.loading') : $t('auth.resetPassword') }}
-      </button>
+      </PBtn>
     </form>
   </div>
 </template>

@@ -77,16 +77,11 @@ onMounted(loadBranding)
         </nav>
 
         <div class="header-actions">
-          <button class="btn btn-ghost btn-sm btn-icon" @click="cycleTheme" :title="$t('settings.theme')">
-            <HugeiconsIcon :icon="themeIconComponent" :size="18" />
-          </button>
-          <NuxtLink to="/settings" class="btn btn-ghost btn-sm">
-            <HugeiconsIcon :icon="UserIcon" :size="18" />
+          <PBtn variant="ghost" size="sm" :icon="themeIconComponent" icon-only @click="cycleTheme" :title="$t('settings.theme')" />
+          <PBtn variant="ghost" size="sm" :icon="UserIcon" to="/settings">
             {{ user?.name }}
-          </NuxtLink>
-          <button class="btn btn-ghost btn-sm btn-icon" @click="logout" :title="$t('auth.logout')">
-            <HugeiconsIcon :icon="Logout02Icon" :size="18" />
-          </button>
+          </PBtn>
+          <PBtn variant="ghost" size="sm" :icon="Logout02Icon" icon-only @click="logout" :title="$t('auth.logout')" />
         </div>
       </div>
     </header>

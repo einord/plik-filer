@@ -90,13 +90,13 @@ async function handleSubmit() {
             required
             autocomplete="new-password"
           />
-          <button type="button" class="btn btn-ghost btn-sm btn-icon" @click="showPassword = !showPassword">
-            <HugeiconsIcon :icon="showPassword ? ViewOffIcon : ViewIcon" :size="18" />
-          </button>
+          <PBtn type="button" variant="ghost" size="sm" :icon="showPassword ? ViewOffIcon : ViewIcon" icon-only @click="showPassword = !showPassword" />
         </div>
-        <button type="button" class="btn btn-ghost btn-sm" style="margin-top: var(--space-1);" @click="handleGenerate">
-          {{ $t('auth.generatePassword') }}
-        </button>
+        <div style="margin-top: var(--space-1);">
+          <PBtn type="button" variant="ghost" size="sm" @click="handleGenerate">
+            {{ $t('auth.generatePassword') }}
+          </PBtn>
+        </div>
 
         <div v-if="passwordStrength" class="password-strength">
           <div class="strength-bar">
@@ -111,9 +111,11 @@ async function handleSubmit() {
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: var(--space-4);" :disabled="loading">
-        {{ loading ? $t('common.loading') : $t('setup.createAdminAccount') }}
-      </button>
+      <div style="margin-top: var(--space-4);">
+        <PBtn type="submit" size="lg" block :disabled="loading">
+          {{ loading ? $t('common.loading') : $t('setup.createAdminAccount') }}
+        </PBtn>
+      </div>
     </form>
   </div>
 </template>

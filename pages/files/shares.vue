@@ -83,9 +83,9 @@ onMounted(async () => {
   <div>
     <div class="page-header">
       <h1>{{ $t('share.shareLinks') }}</h1>
-      <button class="btn btn-primary btn-sm" @click="showCreate = true">
+      <PBtn size="sm" @click="showCreate = true">
         {{ $t('share.createShareLink') }}
-      </button>
+      </PBtn>
     </div>
 
     <!-- Create dialog -->
@@ -124,12 +124,12 @@ onMounted(async () => {
       </div>
 
       <div style="display: flex; gap: var(--space-2);">
-        <button class="btn btn-primary btn-sm" @click="createLink" :disabled="!newLink.fileIds.length">
+        <PBtn size="sm" @click="createLink" :disabled="!newLink.fileIds.length">
           {{ $t('share.createShareLink') }}
-        </button>
-        <button class="btn btn-ghost btn-sm" @click="showCreate = false">
+        </PBtn>
+        <PBtn variant="ghost" size="sm" @click="showCreate = false">
           {{ $t('common.cancel') }}
-        </button>
+        </PBtn>
       </div>
     </div>
 
@@ -154,13 +154,10 @@ onMounted(async () => {
             </span>
           </div>
           <div class="link-actions">
-            <button v-if="!link.isExpired" class="btn btn-ghost btn-sm" @click="copyLink(link.token)">
-              <HugeiconsIcon :icon="Copy01Icon" :size="18" />
+            <PBtn v-if="!link.isExpired" variant="ghost" size="sm" :icon="Copy01Icon" @click="copyLink(link.token)">
               {{ $t('share.copyLink') }}
-            </button>
-            <button class="btn btn-ghost btn-sm btn-icon" @click="deleteLink(link.id)" :title="$t('common.delete')">
-              <HugeiconsIcon :icon="Delete02Icon" :size="18" />
-            </button>
+            </PBtn>
+            <PBtn variant="ghost" size="sm" :icon="Delete02Icon" icon-only @click="deleteLink(link.id)" :title="$t('common.delete')" />
           </div>
         </div>
 

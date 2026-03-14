@@ -211,22 +211,21 @@ onMounted(() => {
   <div>
     <div class="page-header">
       <div class="breadcrumbs">
-        <button class="btn btn-ghost btn-sm" @click="navigateToFolder(null)">
+        <PBtn variant="ghost" size="sm" @click="navigateToFolder(null)">
           {{ $t('files.files') }}
-        </button>
+        </PBtn>
         <template v-for="crumb in breadcrumbs" :key="crumb.id">
           <span class="breadcrumb-sep">/</span>
-          <button class="btn btn-ghost btn-sm" @click="navigateToFolder(crumb.id, crumb.name)">
+          <PBtn variant="ghost" size="sm" @click="navigateToFolder(crumb.id, crumb.name)">
             {{ crumb.name }}
-          </button>
+          </PBtn>
         </template>
       </div>
 
       <div class="page-actions" v-if="user?.canWrite">
-        <button class="btn btn-secondary btn-sm" @click="showNewFolder = true">
-          <HugeiconsIcon :icon="FolderAddIcon" :size="18" />
+        <PBtn variant="secondary" size="sm" :icon="FolderAddIcon" @click="showNewFolder = true">
           {{ $t('files.newFolder') }}
-        </button>
+        </PBtn>
         <label class="btn btn-primary btn-sm upload-btn">
           <HugeiconsIcon :icon="Upload04Icon" :size="18" />
           {{ $t('files.upload') }}
@@ -276,31 +275,35 @@ onMounted(() => {
           </div>
           <div class="upload-controls">
             <!-- Pause/Resume button -->
-            <button
+            <PBtn
               v-if="upload.status === 'uploading'"
-              class="btn btn-ghost btn-sm btn-icon"
+              variant="ghost"
+              size="sm"
+              :icon="PauseIcon"
+              icon-only
               @click="pauseUpload(id)"
               :title="$t('files.pauseUpload')"
-            >
-              <HugeiconsIcon :icon="PauseIcon" :size="18" />
-            </button>
-            <button
+            />
+            <PBtn
               v-else-if="upload.status === 'paused'"
-              class="btn btn-ghost btn-sm btn-icon"
+              variant="ghost"
+              size="sm"
+              :icon="PlayIcon"
+              icon-only
               @click="resumeUpload(id)"
               :title="$t('files.resumeUpload')"
-            >
-              <HugeiconsIcon :icon="PlayIcon" :size="18" />
-            </button>
+            />
             <!-- Cancel button -->
-            <button
+            <PBtn
               v-if="upload.status === 'uploading' || upload.status === 'paused' || upload.status === 'pending'"
-              class="btn btn-ghost btn-sm btn-icon upload-cancel-btn"
+              variant="ghost"
+              size="sm"
+              :icon="Cancel01Icon"
+              icon-only
+              class="upload-cancel-btn"
               @click="cancelUpload(id)"
               :title="$t('files.cancelUpload')"
-            >
-              <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
-            </button>
+            />
           </div>
         </div>
 
@@ -351,15 +354,15 @@ onMounted(() => {
           autofocus
           @keydown.esc="showNewFolder = false"
         />
-        <button type="submit" class="btn btn-primary btn-sm">{{ $t('common.save') }}</button>
-        <button type="button" class="btn btn-ghost btn-sm" @click="showNewFolder = false">{{ $t('common.cancel') }}</button>
+        <PBtn type="submit" size="sm">{{ $t('common.save') }}</PBtn>
+        <PBtn type="button" variant="ghost" size="sm" @click="showNewFolder = false">{{ $t('common.cancel') }}</PBtn>
       </form>
     </div>
 
     <!-- Error -->
     <div v-if="error" class="error-message">
       {{ error }}
-      <button class="btn btn-ghost btn-sm" @click="error = ''">{{ $t('common.close') }}</button>
+      <PBtn variant="ghost" size="sm" @click="error = ''">{{ $t('common.close') }}</PBtn>
     </div>
 
     <!-- Drop zone -->
@@ -374,12 +377,12 @@ onMounted(() => {
       <!-- Selection actions -->
       <div v-if="selectedIds.size > 0" class="selection-bar">
         <span>{{ $t('files.selected', { count: selectedIds.size }) }}</span>
-        <button class="btn btn-primary btn-sm" @click="downloadSelected">
+        <PBtn size="sm" @click="downloadSelected">
           {{ $t('files.downloadSelected') }}
-        </button>
-        <button class="btn btn-ghost btn-sm" @click="selectedIds.clear()">
+        </PBtn>
+        <PBtn variant="ghost" size="sm" @click="selectedIds.clear()">
           {{ $t('files.deselectAll') }}
-        </button>
+        </PBtn>
       </div>
 
       <!-- Loading -->
@@ -445,22 +448,24 @@ onMounted(() => {
           </div>
 
           <div class="file-col-actions">
-            <button
+            <PBtn
               v-if="!file.isDirectory"
-              class="btn btn-ghost btn-sm btn-icon"
+              variant="ghost"
+              size="sm"
+              :icon="Download04Icon"
+              icon-only
               @click="downloadFile(file)"
               :title="$t('files.download')"
-            >
-              <HugeiconsIcon :icon="Download04Icon" :size="18" />
-            </button>
-            <button
+            />
+            <PBtn
               v-if="user?.canWrite"
-              class="btn btn-ghost btn-sm btn-icon"
+              variant="ghost"
+              size="sm"
+              :icon="Delete02Icon"
+              icon-only
               @click="deleteFile(file)"
               :title="$t('common.delete')"
-            >
-              <HugeiconsIcon :icon="Delete02Icon" :size="18" />
-            </button>
+            />
           </div>
         </div>
       </div>
@@ -506,9 +511,7 @@ onMounted(() => {
           <div class="file-col-size">{{ file.isDirectory ? '' : formatSize(file.size) }}</div>
           <div class="file-col-modified">{{ file.createdAt ? new Date(file.createdAt).toLocaleDateString() : '' }}</div>
           <div class="file-col-actions">
-            <button v-if="!file.isDirectory" class="btn btn-ghost btn-sm btn-icon" @click="downloadFile(file)" :title="$t('files.download')">
-              <HugeiconsIcon :icon="Download04Icon" :size="18" />
-            </button>
+            <PBtn v-if="!file.isDirectory" variant="ghost" size="sm" :icon="Download04Icon" icon-only @click="downloadFile(file)" :title="$t('files.download')" />
           </div>
         </div>
       </div>

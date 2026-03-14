@@ -58,23 +58,39 @@ async function loadSettings() {
 }
 
 async function checkUploadedLogo() {
-  try {
-    const res = await $fetch.raw('/api/settings/logo', { method: 'HEAD' })
-    hasUploadedLogo.value = res.ok
-    if (res.ok) {
-      // Add cache-busting query param
+  if (branding.logoType === 'upload') {
+    // If branding says upload, trust it and set the URL
+    hasUploadedLogo.value = true
+    uploadedLogoUrl.value = `/api/settings/logo?t=${Date.now()}`
+  } else {
+    // Otherwise probe the endpoint
+    try {
+      await $fetch('/api/settings/logo', { method: 'HEAD' })
+      hasUploadedLogo.value = true
       uploadedLogoUrl.value = `/api/settings/logo?t=${Date.now()}`
+    } catch {
+      hasUploadedLogo.value = false
     }
-  } catch {
-    hasUploadedLogo.value = false
   }
 }
 
-async function uploadLogo(event: Event) {
+const logoDragOver = ref(false)
+
+function handleLogoFileInput(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  if (!file) return
+  if (file) doLogoUpload(file)
+  // Reset input so the same file can be re-selected
+  if (logoFileInput.value) logoFileInput.value.value = ''
+}
 
+function handleLogoDrop(event: DragEvent) {
+  logoDragOver.value = false
+  const file = event.dataTransfer?.files?.[0]
+  if (file) doLogoUpload(file)
+}
+
+async function doLogoUpload(file: File) {
   // Client-side validation
   const allowedTypes = ['image/png', 'image/svg+xml', 'image/jpeg', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
@@ -102,10 +118,6 @@ async function uploadLogo(event: Event) {
     error.value = t('errors.serverError')
   } finally {
     uploading.value = false
-    // Reset input so the same file can be re-selected
-    if (logoFileInput.value) {
-      logoFileInput.value.value = ''
-    }
   }
 }
 
@@ -175,7 +187,7 @@ onMounted(loadSettings)
 <template>
   <div>
     <div class="page-header">
-      <NuxtLink to="/admin" class="btn btn-ghost btn-sm">&larr; {{ $t('common.back') }}</NuxtLink>
+      <PBtn variant="ghost" size="sm" to="/admin">&larr; {{ $t('common.back') }}</PBtn>
       <h1>{{ $t('admin.settings') }}</h1>
     </div>
 
@@ -223,48 +235,60 @@ onMounted(loadSettings)
 
           <!-- Logo input mode toggle -->
           <div class="logo-mode-toggle">
-            <button
+            <PBtn
               type="button"
-              class="btn btn-sm"
-              :class="logoInputMode === 'upload' ? 'btn-primary' : 'btn-ghost'"
+              size="sm"
+              :variant="logoInputMode === 'upload' ? 'primary' : 'ghost'"
+              :icon="Upload04Icon"
               @click="logoInputMode = 'upload'"
             >
-              <HugeiconsIcon :icon="Upload04Icon" :size="16" />
               {{ $t('branding.useUpload') }}
-            </button>
-            <button
+            </PBtn>
+            <PBtn
               type="button"
-              class="btn btn-sm"
-              :class="logoInputMode === 'url' ? 'btn-primary' : 'btn-ghost'"
+              size="sm"
+              :variant="logoInputMode === 'url' ? 'primary' : 'ghost'"
               @click="logoInputMode = 'url'"
             >
               {{ $t('branding.useUrl') }}
-            </button>
+            </PBtn>
           </div>
 
           <!-- Upload mode -->
           <div v-if="logoInputMode === 'upload'" class="logo-upload-area">
-            <div class="upload-zone" @click="logoFileInput?.click()">
+            <div
+              class="upload-zone"
+              :class="{ 'drag-over': logoDragOver, 'is-uploading': uploading }"
+              @click="logoFileInput?.click()"
+              @dragover.prevent="logoDragOver = true"
+              @dragleave="logoDragOver = false"
+              @drop.prevent="handleLogoDrop"
+            >
               <HugeiconsIcon :icon="Upload04Icon" :size="24" />
-              <span>{{ $t('branding.uploadLogo') }}</span>
-              <small>{{ $t('branding.logoRequirements') }}</small>
+              <span v-if="uploading">{{ $t('common.loading') }}</span>
+              <template v-else>
+                <span>{{ $t('files.dragAndDrop') }}</span>
+                <small>{{ $t('files.dragAndDropHint') }}</small>
+                <small>{{ $t('branding.logoRequirements') }}</small>
+              </template>
             </div>
             <input
               ref="logoFileInput"
               type="file"
               accept=".png,.svg,.jpg,.jpeg,.webp"
               style="display: none;"
-              @change="uploadLogo"
+              @change="handleLogoFileInput"
             />
-            <button
+            <PBtn
               v-if="hasUploadedLogo"
               type="button"
-              class="btn btn-ghost btn-sm btn-danger"
+              variant="danger"
+              size="sm"
+              :icon="Delete02Icon"
               @click="removeLogo"
             >
-              <HugeiconsIcon :icon="Delete02Icon" :size="16" />
               {{ $t('branding.removeLogo') }}
-            </button>
+            </PBtn>
           </div>
 
           <!-- URL mode -->
@@ -279,7 +303,7 @@ onMounted(loadSettings)
           <input v-model="branding.domainName" type="text" />
           <small>{{ $t('branding.domainNameHint') }}</small>
         </div>
-        <button type="submit" class="btn btn-primary">{{ $t('common.save') }}</button>
+        <PBtn type="submit">{{ $t('common.save') }}</PBtn>
       </form>
     </div>
 
@@ -322,7 +346,7 @@ onMounted(loadSettings)
             <span>{{ $t('smtp.secure') }}</span>
           </label>
         </div>
-        <button type="submit" class="btn btn-primary">{{ $t('common.save') }}</button>
+        <PBtn type="submit">{{ $t('common.save') }}</PBtn>
       </form>
 
       <hr style="margin: var(--space-6) 0; border-color: var(--border-color);" />
@@ -330,7 +354,7 @@ onMounted(loadSettings)
       <h3 style="margin-bottom: var(--space-3);">{{ $t('smtp.sendTestEmail') }}</h3>
       <div style="display: flex; gap: var(--space-2);">
         <input v-model="testEmail" type="email" :placeholder="$t('smtp.testEmail')" style="max-width: 300px;" />
-        <button class="btn btn-secondary" @click="sendTest">{{ $t('smtp.sendTestEmail') }}</button>
+        <PBtn variant="secondary" @click="sendTest">{{ $t('smtp.sendTestEmail') }}</PBtn>
       </div>
     </div>
   </div>
@@ -455,14 +479,26 @@ onMounted(loadSettings)
   transition: all var(--transition-fast);
 }
 
-.upload-zone:hover {
+.upload-zone:hover,
+.upload-zone.drag-over {
   border-color: var(--color-primary-400);
   color: var(--color-primary-600);
   background-color: var(--color-primary-50);
 }
 
-.dark .upload-zone:hover {
+.dark .upload-zone:hover,
+.dark .upload-zone.drag-over {
   background-color: rgba(59, 130, 246, 0.05);
+}
+
+.upload-zone.drag-over {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.upload-zone.is-uploading {
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 .upload-zone small {

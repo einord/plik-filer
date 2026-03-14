@@ -199,7 +199,7 @@ function handleLocaleChange(newLocale: string) {
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">{{ $t('common.save') }}</button>
+        <PBtn type="submit">{{ $t('common.save') }}</PBtn>
       </form>
     </div>
 
@@ -219,13 +219,13 @@ function handleLocaleChange(newLocale: string) {
               :type="showPassword ? 'text' : 'password'"
               autocomplete="new-password"
             />
-            <button type="button" class="btn btn-ghost btn-sm btn-icon" @click="showPassword = !showPassword" :title="showPassword ? $t('common.hide') : $t('common.show')">
-              <HugeiconsIcon :icon="showPassword ? ViewOffIcon : ViewIcon" :size="18" />
-            </button>
+            <PBtn type="button" variant="ghost" size="sm" :icon="showPassword ? ViewOffIcon : ViewIcon" icon-only @click="showPassword = !showPassword" :title="showPassword ? $t('common.hide') : $t('common.show')" />
           </div>
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-top: var(--space-1);" @click="handleGenerate">
-            {{ $t('auth.generatePassword') }}
-          </button>
+          <div style="margin-top: var(--space-1);">
+            <PBtn type="button" variant="ghost" size="sm" @click="handleGenerate">
+              {{ $t('auth.generatePassword') }}
+            </PBtn>
+          </div>
           <div v-if="passwordStrength" class="password-strength">
             <div class="strength-bar">
               <div class="strength-bar-fill" :style="{ width: `${(passwordStrength.score / 6) * 100}%` }" />
@@ -237,7 +237,7 @@ function handleLocaleChange(newLocale: string) {
           <label>{{ $t('auth.confirmPassword') }}</label>
           <input v-model="passwordForm.confirmPassword" type="password" autocomplete="new-password" />
         </div>
-        <button type="submit" class="btn btn-primary">{{ $t('settings.changePassword') }}</button>
+        <PBtn type="submit">{{ $t('settings.changePassword') }}</PBtn>
       </form>
     </div>
 
@@ -252,30 +252,31 @@ function handleLocaleChange(newLocale: string) {
             <span class="passkey-date">{{ new Date(pk.createdAt).toLocaleDateString() }}</span>
           </div>
           <div class="passkey-actions">
-            <button
+            <PBtn
               v-if="passkeyDeleteConfirm === pk.id"
-              class="btn btn-sm"
-              style="color: var(--color-error);"
+              variant="danger"
+              size="sm"
               @click="removePasskey(pk.id)"
             >
               {{ $t('common.confirm') }}
-            </button>
-            <button
+            </PBtn>
+            <PBtn
               v-if="passkeyDeleteConfirm === pk.id"
-              class="btn btn-ghost btn-sm"
+              variant="ghost"
+              size="sm"
               @click="passkeyDeleteConfirm = null"
             >
               {{ $t('common.cancel') }}
-            </button>
-            <button
+            </PBtn>
+            <PBtn
               v-else
-              class="btn btn-ghost btn-sm"
-              style="color: var(--color-error);"
+              variant="danger"
+              size="sm"
+              :icon="Delete02Icon"
               @click="passkeyDeleteConfirm = pk.id"
             >
-              <HugeiconsIcon :icon="Delete02Icon" :size="18" />
               {{ $t('settings.removePasskey') }}
-            </button>
+            </PBtn>
           </div>
         </div>
       </div>
@@ -283,13 +284,12 @@ function handleLocaleChange(newLocale: string) {
         {{ $t('auth.passkeyDescription') }}
       </p>
 
-      <button
-        class="btn btn-primary"
+      <PBtn
         :disabled="passkeyLoading"
         @click="addPasskey"
       >
         {{ passkeyLoading ? $t('common.loading') : $t('settings.addPasskey') }}
-      </button>
+      </PBtn>
     </div>
   </div>
 </template>

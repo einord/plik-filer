@@ -156,14 +156,12 @@ onMounted(loadData)
     <div class="page-header">
       <h1>{{ $t('admin.dashboard') }}</h1>
       <div style="display: flex; gap: var(--space-2);">
-        <NuxtLink to="/admin/settings" class="btn btn-secondary btn-sm">
-          <HugeiconsIcon :icon="Settings02Icon" :size="18" />
+        <PBtn variant="secondary" size="sm" :icon="Settings02Icon" to="/admin/settings">
           {{ $t('admin.settings') }}
-        </NuxtLink>
-        <button class="btn btn-primary btn-sm" @click="showInvite = true">
-          <HugeiconsIcon :icon="UserAdd01Icon" :size="18" />
+        </PBtn>
+        <PBtn size="sm" :icon="UserAdd01Icon" @click="showInvite = true">
           {{ $t('admin.createInvitation') }}
-        </button>
+        </PBtn>
       </div>
     </div>
 
@@ -236,12 +234,12 @@ onMounted(loadData)
         <input v-model="inviteEmail" type="email" :placeholder="t('auth.email')" />
       </div>
       <div style="display: flex; gap: var(--space-2);">
-        <button class="btn btn-primary btn-sm" @click="createInvitation">
+        <PBtn size="sm" @click="createInvitation">
           {{ $t('admin.createInvitation') }}
-        </button>
-        <button class="btn btn-ghost btn-sm" @click="showInvite = false; inviteResult = null">
+        </PBtn>
+        <PBtn variant="ghost" size="sm" @click="showInvite = false; inviteResult = null">
           {{ $t('common.cancel') }}
-        </button>
+        </PBtn>
       </div>
 
       <div v-if="inviteResult" style="margin-top: var(--space-3); padding: var(--space-3); background: var(--bg-secondary); border-radius: var(--radius-md);">
@@ -306,12 +304,12 @@ onMounted(loadData)
                 class="quota-input"
               />
               <span class="quota-unit">GB</span>
-              <button class="btn btn-primary btn-sm" @click="saveQuota(u.id)">{{ $t('common.save') }}</button>
-              <button class="btn btn-ghost btn-sm" @click="editingQuotaUserId = null">{{ $t('common.cancel') }}</button>
+              <PBtn size="sm" @click="saveQuota(u.id)">{{ $t('common.save') }}</PBtn>
+              <PBtn variant="ghost" size="sm" @click="editingQuotaUserId = null">{{ $t('common.cancel') }}</PBtn>
             </div>
-            <button v-else class="btn btn-ghost btn-sm quota-edit-btn" @click="startEditQuota(u)">
+            <PBtn v-else variant="ghost" size="sm" class="quota-edit-btn" @click="startEditQuota(u)">
               {{ $t('admin.editQuota') }}
-            </button>
+            </PBtn>
           </div>
 
           <div class="user-permissions" v-if="u.role !== 'admin'">
@@ -326,20 +324,18 @@ onMounted(loadData)
           </div>
 
           <div class="user-actions">
-            <NuxtLink :to="`/admin/users/${u.id}/files`" class="btn btn-ghost btn-sm" :title="$t('admin.manageFiles')">
-              <HugeiconsIcon :icon="Folder01Icon" :size="18" />
+            <PBtn variant="ghost" size="sm" :icon="Folder01Icon" :to="`/admin/users/${u.id}/files`" :title="$t('admin.manageFiles')">
               {{ $t('admin.manageFiles') }}
-            </NuxtLink>
+            </PBtn>
             <template v-if="u.role !== 'admin'">
-              <button
-                class="btn btn-ghost btn-sm"
+              <PBtn
+                variant="ghost"
+                size="sm"
                 @click="toggleUser(u.id, u.isActive)"
               >
                 {{ u.isActive ? $t('admin.deactivateUser') : $t('admin.activateUser') }}
-              </button>
-              <button class="btn btn-ghost btn-sm btn-icon" @click="deleteUser(u.id)" :title="$t('common.delete')">
-                <HugeiconsIcon :icon="Delete02Icon" :size="18" />
-              </button>
+              </PBtn>
+              <PBtn variant="ghost" size="sm" :icon="Delete02Icon" icon-only @click="deleteUser(u.id)" :title="$t('common.delete')" />
             </template>
           </div>
         </div>

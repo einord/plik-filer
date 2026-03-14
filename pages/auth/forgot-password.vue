@@ -37,9 +37,9 @@ async function handleSubmit() {
       <p style="color: var(--color-success); margin-bottom: var(--space-4);">
         {{ $t('auth.resetPasswordSent') }}
       </p>
-      <NuxtLink to="/auth/login" class="btn btn-secondary">
+      <PBtn variant="secondary" to="/auth/login">
         {{ $t('auth.login') }}
-      </NuxtLink>
+      </PBtn>
     </div>
 
     <form v-else @submit.prevent="handleSubmit">
@@ -56,9 +56,9 @@ async function handleSubmit() {
         <input id="email" v-model="email" type="email" required autocomplete="email" />
       </div>
 
-      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;" :disabled="loading">
+      <PBtn type="submit" size="lg" block :disabled="loading">
         {{ loading ? $t('common.loading') : $t('auth.resetPassword') }}
-      </button>
+      </PBtn>
 
       <div style="text-align: center; margin-top: var(--space-4);">
         <NuxtLink to="/auth/login" style="font-size: var(--text-sm);">

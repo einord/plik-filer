@@ -49,27 +49,24 @@ async function handlePasskeyLogin() {
 
 <template>
   <div>
-    <h1 style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: var(--space-2);">
+    <h1 style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: var(--space-6);">
       {{ $t('auth.login') }}
     </h1>
-    <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
-      {{ $t('common.appName') }}
-    </p>
 
     <div v-if="error" class="error-message">
       {{ error }}
     </div>
 
     <!-- Passkey login button -->
-    <button
-      type="button"
-      class="btn btn-primary btn-lg passkey-btn"
+    <PBtn
+      size="lg"
+      block
+      :icon="Key01Icon"
       :disabled="passkeyLoading"
       @click="handlePasskeyLogin"
     >
-      <HugeiconsIcon :icon="Key01Icon" :size="20" />
       {{ passkeyLoading ? $t('common.loading') : $t('auth.usePasskey') }}
-    </button>
+    </PBtn>
     <p class="passkey-hint">{{ $t('auth.passkeyDescription') }}</p>
 
     <div class="divider">
@@ -87,9 +84,9 @@ async function handlePasskeyLogin() {
         <input id="password" v-model="form.password" type="password" required autocomplete="current-password" />
       </div>
 
-      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;" :disabled="loading">
+      <PBtn type="submit" size="lg" block :disabled="loading">
         {{ loading ? $t('common.loading') : $t('auth.login') }}
-      </button>
+      </PBtn>
 
       <div style="text-align: center; margin-top: var(--space-4);">
         <NuxtLink to="/auth/forgot-password" style="font-size: var(--text-sm);">
@@ -112,10 +109,6 @@ async function handlePasskeyLogin() {
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   margin-bottom: var(--space-4);
-}
-
-.passkey-btn {
-  width: 100%;
 }
 
 .passkey-hint {

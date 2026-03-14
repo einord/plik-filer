@@ -44,10 +44,9 @@ function downloadFile(fileId: number) {
             <span class="share-file-name">{{ file.filename }}</span>
             <span class="share-file-size">{{ formatSize(file.size) }}</span>
           </div>
-          <button class="btn btn-primary btn-sm" @click="downloadFile(file.id)">
-            <HugeiconsIcon :icon="Download04Icon" :size="18" />
+          <PBtn size="sm" :icon="Download04Icon" @click="downloadFile(file.id)">
             {{ $t('files.download') }}
-          </button>
+          </PBtn>
         </div>
       </div>
     </div>

@@ -21,10 +21,11 @@ onMounted(loadBranding)
 <template>
   <div class="auth-layout">
     <div class="auth-container">
-      <div v-if="brandingLogo" class="auth-branding">
-        <img :src="brandingLogo" :alt="brandingName || 'Logo'" class="auth-logo" />
-      </div>
       <div class="auth-card card">
+        <div class="auth-branding">
+          <img v-if="brandingLogo" :src="brandingLogo" :alt="brandingName || 'Logo'" class="auth-logo" />
+          <span class="auth-service-name">{{ brandingName || 'plik Filer' }}</span>
+        </div>
         <slot />
       </div>
     </div>
@@ -49,12 +50,22 @@ onMounted(loadBranding)
 .auth-branding {
   text-align: center;
   margin-bottom: var(--space-6);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .auth-logo {
-  height: 48px;
-  width: auto;
+  height: 72px;
+  max-width: 100%;
   object-fit: contain;
+}
+
+.auth-service-name {
+  display: block;
+  margin-top: var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .auth-card {

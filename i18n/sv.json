@@ -155,6 +155,8 @@
     "emptyFolder": "Mappen är tom",
     "noFiles": "Inga filer ännu. Ladda upp något!",
     "fileMissing": "Filen saknas",
+    "deleteSelected": "Ta bort valda",
+    "deleteSelectedConfirm": "Är du säker på att du vill radera {count} markerade objekt?",
     "selectAll": "Markera alla",
     "deselectAll": "Avmarkera alla",
     "zipDownloading": "Skapar zip-fil...",

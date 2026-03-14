@@ -155,6 +155,8 @@
     "emptyFolder": "This folder is empty",
     "noFiles": "No files yet. Upload something!",
     "fileMissing": "File missing",
+    "deleteSelected": "Delete selected",
+    "deleteSelectedConfirm": "Are you sure you want to delete {count} selected items?",
     "selectAll": "Select all",
     "deselectAll": "Deselect all",
     "zipDownloading": "Creating zip file...",

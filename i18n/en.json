@@ -60,6 +60,14 @@
     "createAdminAccount": "Create admin account",
     "complete": "All set! You can now log in."
   },
+  "accountSetup": {
+    "title": "Set up your account",
+    "description": "Enter your email address and choose a password to get started.",
+    "welcomeMessage": "Hi {name}! An account has been created for you.",
+    "completeSetup": "Complete setup",
+    "invalidToken": "Invalid or expired setup link.",
+    "setupComplete": "Your account is ready! You are now logged in."
+  },
   "admin": {
     "dashboard": "Dashboard",
     "users": "Users",
@@ -104,7 +112,20 @@
     "recentUploads": "Recent uploads",
     "uploadedBy": "Uploaded by {name}",
     "noRecentUploads": "No recent uploads",
-    "activeShareLinks": "Active share links"
+    "activeShareLinks": "Active share links",
+    "createUserDirect": "Create user",
+    "userName": "Name",
+    "userEmail": "Email (optional)",
+    "userCreated": "User created!",
+    "sendSetupLink": "Send setup link",
+    "copySetupLink": "Copy setup link",
+    "setupLinkSent": "Setup link sent!",
+    "setupLinkCopied": "Setup link copied!",
+    "setupLinkGenerated": "Setup link generated",
+    "awaitingSetup": "Awaiting setup",
+    "setupCompleted": "Registered",
+    "generateNewLink": "Generate new link",
+    "setupAlreadyCompleted": "User has already completed setup"
   },
   "files": {
     "files": "Files",

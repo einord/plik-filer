@@ -1,6 +1,6 @@
 export interface User {
   id: number
-  email: string
+  email: string | null
   name: string
   role: 'admin' | 'user'
   isActive: boolean
@@ -11,6 +11,7 @@ export interface User {
   theme: string
   createdAt: string
   updatedAt?: string
+  setupCompleted?: boolean
 }
 
 export interface Passkey {

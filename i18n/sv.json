@@ -60,6 +60,14 @@
     "createAdminAccount": "Skapa adminkonto",
     "complete": "Klart! Du kan nu logga in."
   },
+  "accountSetup": {
+    "title": "Konfigurera ditt konto",
+    "description": "Ange din e-postadress och välj ett lösenord för att komma igång.",
+    "welcomeMessage": "Hej {name}! Ditt konto har skapats åt dig.",
+    "completeSetup": "Slutför registrering",
+    "invalidToken": "Ogiltig eller utgången setup-länk.",
+    "setupComplete": "Ditt konto är klart! Du är nu inloggad."
+  },
   "admin": {
     "dashboard": "Kontrollpanel",
     "users": "Användare",
@@ -104,7 +112,20 @@
     "recentUploads": "Senaste uppladdningar",
     "uploadedBy": "Uppladdad av {name}",
     "noRecentUploads": "Inga senaste uppladdningar",
-    "activeShareLinks": "Aktiva delningslänkar"
+    "activeShareLinks": "Aktiva delningslänkar",
+    "createUserDirect": "Skapa användare",
+    "userName": "Namn",
+    "userEmail": "E-post (valfritt)",
+    "userCreated": "Användaren har skapats!",
+    "sendSetupLink": "Skicka setup-länk",
+    "copySetupLink": "Kopiera setup-länk",
+    "setupLinkSent": "Setup-länken har skickats!",
+    "setupLinkCopied": "Setup-länken har kopierats!",
+    "setupLinkGenerated": "Setup-länk genererad",
+    "awaitingSetup": "Inväntar setup",
+    "setupCompleted": "Registrerad",
+    "generateNewLink": "Generera ny länk",
+    "setupAlreadyCompleted": "Användaren har redan slutfört sin setup"
   },
   "files": {
     "files": "Filer",

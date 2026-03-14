@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { HugeiconsIcon } from '@hugeicons/vue'
-import { Delete02Icon, Settings02Icon, UserAdd01Icon, Folder01Icon, UserMultipleIcon, File02Icon, DatabaseIcon, Link04Icon } from '@hugeicons/core-free-icons'
+import { Delete02Icon, Settings02Icon, UserAdd01Icon, Folder01Icon, UserMultipleIcon, File02Icon, DatabaseIcon, Link04Icon, SentIcon, Copy01Icon } from '@hugeicons/core-free-icons'
 
 const { t } = useI18n()
 
@@ -8,9 +8,11 @@ const users = ref<any[]>([])
 const invitations = ref<any[]>([])
 const loading = ref(true)
 const error = ref('')
-const showInvite = ref(false)
-const inviteEmail = ref('')
-const inviteResult = ref<{ url: string } | null>(null)
+const showCreateUser = ref(false)
+const newUserName = ref('')
+const newUserEmail = ref('')
+const createUserLoading = ref(false)
+const setupLinkResult = ref<{ url: string; userId: number } | null>(null)
 const userStats = ref<Record<number, { totalFiles: number; totalUsed: number; maxFileSize: number }>>({})
 const editingQuotaUserId = ref<number | null>(null)
 const editQuotaValueGB = ref(100)
@@ -90,17 +92,35 @@ function getUsagePercentage(userId: number): number {
   return Math.round((stats.totalUsed / stats.maxFileSize) * 100)
 }
 
-async function createInvitation() {
+async function createUserDirect() {
+  if (!newUserName.value.trim()) return
+  createUserLoading.value = true
   try {
-    const data = await $fetch('/api/users/invite', {
+    await $fetch('/api/users', {
       method: 'POST',
-      body: { email: inviteEmail.value || undefined },
+      body: {
+        name: newUserName.value.trim(),
+        email: newUserEmail.value.trim() || undefined,
+      },
     })
-    inviteResult.value = { url: data.invitation.url }
-    if (data.invitation.url) {
-      await navigator.clipboard.writeText(data.invitation.url)
-    }
-    inviteEmail.value = ''
+    newUserName.value = ''
+    newUserEmail.value = ''
+    showCreateUser.value = false
+    await loadData()
+  } catch (e: any) {
+    error.value = e.data?.statusMessage || t('errors.serverError')
+  } finally {
+    createUserLoading.value = false
+  }
+}
+
+async function sendSetupLink(userId: number) {
+  try {
+    const data = await $fetch(`/api/users/${userId}/setup-link`, {
+      method: 'POST',
+    })
+    setupLinkResult.value = { url: data.setupUrl, userId }
+    await navigator.clipboard.writeText(data.setupUrl)
     await loadData()
   } catch (e: any) {
     error.value = e.data?.statusMessage || t('errors.serverError')
@@ -159,8 +179,8 @@ onMounted(loadData)
         <PBtn variant="secondary" size="sm" :icon="Settings02Icon" to="/admin/settings">
           {{ $t('admin.settings') }}
         </PBtn>
-        <PBtn size="sm" :icon="UserAdd01Icon" @click="showInvite = true">
-          {{ $t('admin.createInvitation') }}
+        <PBtn size="sm" :icon="UserAdd01Icon" @click="showCreateUser = true">
+          {{ $t('admin.createUserDirect') }}
         </PBtn>
       </div>
     </div>
@@ -226,31 +246,39 @@ onMounted(loadData)
       </div>
     </div>
 
-    <!-- Invite dialog -->
-    <div v-if="showInvite" class="card" style="margin-bottom: var(--space-4);">
-      <h3 style="margin-bottom: var(--space-3);">{{ $t('admin.createInvitation') }}</h3>
+    <!-- Create user dialog -->
+    <div v-if="showCreateUser" class="card" style="margin-bottom: var(--space-4);">
+      <h3 style="margin-bottom: var(--space-3);">{{ $t('admin.createUserDirect') }}</h3>
+      <div class="form-group">
+        <label>{{ $t('auth.name') }} *</label>
+        <input v-model="newUserName" type="text" :placeholder="t('auth.name')" />
+      </div>
       <div class="form-group">
         <label>{{ $t('auth.email') }} ({{ $t('common.optional') }})</label>
-        <input v-model="inviteEmail" type="email" :placeholder="t('auth.email')" />
+        <input v-model="newUserEmail" type="email" :placeholder="t('auth.email')" />
       </div>
       <div style="display: flex; gap: var(--space-2);">
-        <PBtn size="sm" @click="createInvitation">
-          {{ $t('admin.createInvitation') }}
+        <PBtn size="sm" :disabled="createUserLoading || !newUserName.trim()" @click="createUserDirect">
+          {{ createUserLoading ? $t('common.loading') : $t('admin.createUserDirect') }}
         </PBtn>
-        <PBtn variant="ghost" size="sm" @click="showInvite = false; inviteResult = null">
+        <PBtn variant="ghost" size="sm" @click="showCreateUser = false">
           {{ $t('common.cancel') }}
         </PBtn>
       </div>
+    </div>
 
-      <div v-if="inviteResult" style="margin-top: var(--space-3); padding: var(--space-3); background: var(--bg-secondary); border-radius: var(--radius-md);">
-        <p style="font-size: var(--text-sm); color: var(--color-success); margin-bottom: var(--space-2);">
-          {{ $t('admin.invitationCreated') }}
-        </p>
-        <code style="font-size: var(--text-xs); word-break: break-all;">{{ inviteResult.url }}</code>
-        <p style="font-size: var(--text-xs); color: var(--text-secondary); margin-top: var(--space-1);">
-          {{ $t('common.copied') }}
-        </p>
-      </div>
+    <!-- Setup link result -->
+    <div v-if="setupLinkResult" class="card" style="margin-bottom: var(--space-4);">
+      <p style="font-size: var(--text-sm); color: var(--color-success); margin-bottom: var(--space-2);">
+        {{ $t('admin.setupLinkGenerated') }}
+      </p>
+      <code style="font-size: var(--text-xs); word-break: break-all;">{{ setupLinkResult.url }}</code>
+      <p style="font-size: var(--text-xs); color: var(--text-secondary); margin-top: var(--space-1);">
+        {{ $t('common.copied') }}
+      </p>
+      <PBtn variant="ghost" size="sm" style="margin-top: var(--space-2);" @click="setupLinkResult = null">
+        {{ $t('common.close') }}
+      </PBtn>
     </div>
 
     <!-- Users list -->
@@ -265,69 +293,77 @@ onMounted(loadData)
 
       <div v-else class="users-list">
         <div v-for="u in users" :key="u.id" class="user-row">
-          <div class="user-info">
-            <div>
-              <strong>{{ u.name }}</strong>
-              <span class="badge" :class="u.role === 'admin' ? 'badge-info' : 'badge-success'" style="margin-left: var(--space-2);">
-                {{ u.role }}
-              </span>
-              <span v-if="!u.isActive" class="badge badge-error" style="margin-left: var(--space-1);">
-                {{ $t('share.inactive') }}
-              </span>
+          <div class="user-row-top">
+            <div class="user-info">
+              <div>
+                <strong>{{ u.name }}</strong>
+                <span class="badge" :class="u.role === 'admin' ? 'badge-info' : 'badge-success'" style="margin-left: var(--space-2);">
+                  {{ u.role }}
+                </span>
+                <span v-if="!u.isActive" class="badge badge-error" style="margin-left: var(--space-1);">
+                  {{ $t('share.inactive') }}
+                </span>
+                <span v-if="!u.setupCompleted && u.role !== 'admin'" class="badge badge-warning" style="margin-left: var(--space-1);">
+                  {{ $t('admin.awaitingSetup') }}
+                </span>
+              </div>
+              <div style="font-size: var(--text-sm); color: var(--text-secondary);">
+                {{ u.email }}
+              </div>
             </div>
-            <div style="font-size: var(--text-sm); color: var(--text-secondary);">
-              {{ u.email }}
+
+            <!-- Storage usage -->
+            <div class="user-storage" v-if="userStats[u.id]">
+              <div class="storage-label">
+                <span class="storage-text">{{ $t('admin.storageUsage') }}: {{ formatSize(userStats[u.id].totalUsed) }} / {{ formatSize(userStats[u.id].maxFileSize) }}</span>
+              </div>
+              <div class="storage-bar">
+                <div
+                  class="storage-bar-fill"
+                  :class="{
+                    'storage-warning': getUsagePercentage(u.id) >= 90 && getUsagePercentage(u.id) < 95,
+                    'storage-danger': getUsagePercentage(u.id) >= 95,
+                  }"
+                  :style="{ width: `${Math.min(getUsagePercentage(u.id), 100)}%` }"
+                />
+              </div>
+              <!-- Inline quota editor -->
+              <div v-if="editingQuotaUserId === u.id" class="quota-editor">
+                <input
+                  v-model.number="editQuotaValueGB"
+                  type="number"
+                  min="1"
+                  class="quota-input"
+                />
+                <span class="quota-unit">GB</span>
+                <PBtn size="sm" @click="saveQuota(u.id)">{{ $t('common.save') }}</PBtn>
+                <PBtn variant="ghost" size="sm" @click="editingQuotaUserId = null">{{ $t('common.cancel') }}</PBtn>
+              </div>
+              <PBtn v-else variant="ghost" size="sm" class="quota-edit-btn" @click="startEditQuota(u)">
+                {{ $t('admin.editQuota') }}
+              </PBtn>
             </div>
           </div>
 
-          <!-- Storage usage -->
-          <div class="user-storage" v-if="userStats[u.id]">
-            <div class="storage-label">
-              <span class="storage-text">{{ $t('admin.storageUsage') }}: {{ formatSize(userStats[u.id].totalUsed) }} / {{ formatSize(userStats[u.id].maxFileSize) }}</span>
+          <div class="user-row-bottom" v-if="u.role !== 'admin'">
+            <div class="user-permissions">
+              <label class="permission-toggle">
+                <input type="checkbox" :checked="u.canRead" @change="updatePermissions(u.id, 'canRead', !u.canRead)" />
+                <span>{{ $t('admin.canRead') }}</span>
+              </label>
+              <label class="permission-toggle">
+                <input type="checkbox" :checked="u.canWrite" @change="updatePermissions(u.id, 'canWrite', !u.canWrite)" />
+                <span>{{ $t('admin.canWrite') }}</span>
+              </label>
             </div>
-            <div class="storage-bar">
-              <div
-                class="storage-bar-fill"
-                :class="{
-                  'storage-warning': getUsagePercentage(u.id) >= 90 && getUsagePercentage(u.id) < 95,
-                  'storage-danger': getUsagePercentage(u.id) >= 95,
-                }"
-                :style="{ width: `${Math.min(getUsagePercentage(u.id), 100)}%` }"
-              />
-            </div>
-            <!-- Inline quota editor -->
-            <div v-if="editingQuotaUserId === u.id" class="quota-editor">
-              <input
-                v-model.number="editQuotaValueGB"
-                type="number"
-                min="1"
-                class="quota-input"
-              />
-              <span class="quota-unit">GB</span>
-              <PBtn size="sm" @click="saveQuota(u.id)">{{ $t('common.save') }}</PBtn>
-              <PBtn variant="ghost" size="sm" @click="editingQuotaUserId = null">{{ $t('common.cancel') }}</PBtn>
-            </div>
-            <PBtn v-else variant="ghost" size="sm" class="quota-edit-btn" @click="startEditQuota(u)">
-              {{ $t('admin.editQuota') }}
-            </PBtn>
-          </div>
 
-          <div class="user-permissions" v-if="u.role !== 'admin'">
-            <label class="permission-toggle">
-              <input type="checkbox" :checked="u.canRead" @change="updatePermissions(u.id, 'canRead', !u.canRead)" />
-              <span>{{ $t('admin.canRead') }}</span>
-            </label>
-            <label class="permission-toggle">
-              <input type="checkbox" :checked="u.canWrite" @change="updatePermissions(u.id, 'canWrite', !u.canWrite)" />
-              <span>{{ $t('admin.canWrite') }}</span>
-            </label>
-          </div>
-
-          <div class="user-actions">
-            <PBtn variant="ghost" size="sm" :icon="Folder01Icon" :to="`/admin/users/${u.id}/files`" :title="$t('admin.manageFiles')">
-              {{ $t('admin.manageFiles') }}
-            </PBtn>
-            <template v-if="u.role !== 'admin'">
+            <div class="user-actions">
+              <PBtn v-if="!u.setupCompleted" variant="ghost" size="sm" :icon="SentIcon" @click="sendSetupLink(u.id)" :title="$t('admin.sendSetupLink')">
+                {{ $t('admin.sendSetupLink') }}
+              </PBtn>
+              <PBtn variant="ghost" size="sm" :icon="Folder01Icon" :to="`/admin/users/${u.id}/files`" :title="$t('admin.manageFiles')">
+                {{ $t('admin.manageFiles') }}
+              </PBtn>
               <PBtn
                 variant="ghost"
                 size="sm"
@@ -336,7 +372,16 @@ onMounted(loadData)
                 {{ u.isActive ? $t('admin.deactivateUser') : $t('admin.activateUser') }}
               </PBtn>
               <PBtn variant="ghost" size="sm" :icon="Delete02Icon" icon-only @click="deleteUser(u.id)" :title="$t('common.delete')" />
-            </template>
+            </div>
+          </div>
+
+          <!-- Admin user: only files button -->
+          <div class="user-row-bottom" v-else>
+            <div class="user-actions">
+              <PBtn variant="ghost" size="sm" :icon="Folder01Icon" :to="`/admin/users/${u.id}/files`" :title="$t('admin.manageFiles')">
+                {{ $t('admin.manageFiles') }}
+              </PBtn>
+            </div>
           </div>
         </div>
       </div>
@@ -366,15 +411,29 @@ onMounted(loadData)
 
 .user-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   padding: var(--space-3) 0;
   border-bottom: 1px solid var(--border-color);
+  gap: var(--space-2);
+}
+
+.user-row:last-child { border-bottom: none; }
+
+.user-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-4);
   flex-wrap: wrap;
 }
 
-.user-row:last-child { border-bottom: none; }
+.user-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
 
 .user-info { flex: 1; min-width: 200px; }
 
@@ -389,16 +448,25 @@ onMounted(loadData)
   gap: var(--space-2);
   font-size: var(--text-sm);
   cursor: pointer;
+  white-space: nowrap;
+}
+
+.permission-toggle input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  margin: 0;
 }
 
 .user-actions {
   display: flex;
   gap: var(--space-1);
+  flex-wrap: wrap;
 }
 
 .user-storage {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-width: 200px;
+  max-width: 400px;
 }
 
 .storage-label {
@@ -454,7 +522,6 @@ onMounted(loadData)
 .quota-edit-btn {
   font-size: var(--text-xs);
   margin-top: var(--space-1);
-  padding: 0;
 }
 
 /* Stats grid */

@@ -14,7 +14,21 @@ export default defineEventHandler(async (event) => {
     canWrite: users.canWrite,
     maxFileSize: users.maxFileSize,
     createdAt: users.createdAt,
+    passwordHash: users.passwordHash,
   }).from(users)
 
-  return { users: allUsers }
+  return {
+    users: allUsers.map(u => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      isActive: u.isActive,
+      canRead: u.canRead,
+      canWrite: u.canWrite,
+      maxFileSize: u.maxFileSize,
+      createdAt: u.createdAt,
+      setupCompleted: !!(u.email && u.passwordHash),
+    })),
+  }
 })

@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const options = await generateRegistrationOptions({
     rpName: config.public.appName || 'plik Filer',
     rpID,
-    userName: user.email,
+    userName: user.email || `user-${user.id}`,
     userDisplayName: user.name,
     attestationType: 'none',
     excludeCredentials,

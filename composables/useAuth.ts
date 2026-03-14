@@ -49,6 +49,17 @@ export function useAuth() {
     return result
   }
 
+  async function setupAccount(token: string, email: string, password: string) {
+    const result = await $fetch('/api/auth/setup', {
+      method: 'POST',
+      body: { token, email, password },
+    })
+    if (result.success) {
+      user.value = result.user as User
+    }
+    return result
+  }
+
   async function loginWithPasskey(email?: string) {
     const { getCredential } = useWebAuthn()
 
@@ -133,6 +144,7 @@ export function useAuth() {
     login,
     logout,
     register,
+    setupAccount,
     loginWithPasskey,
   }
 }

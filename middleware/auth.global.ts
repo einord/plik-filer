@@ -10,7 +10,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // Public routes that don't require auth
-  const publicRoutes = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/setup']
+  const publicRoutes = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/setup', '/setup']
   const isPublicRoute = publicRoutes.some((route) => to.path.startsWith(route))
   const isShareRoute = to.path.startsWith('/share/')
 

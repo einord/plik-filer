@@ -37,7 +37,7 @@ function runMigrations(sqlite: Database.Database) {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE,
       name TEXT NOT NULL,
       password_hash TEXT,
       role TEXT NOT NULL DEFAULT 'user',
@@ -48,7 +48,9 @@ function runMigrations(sqlite: Database.Database) {
       locale TEXT NOT NULL DEFAULT 'sv',
       theme TEXT NOT NULL DEFAULT 'auto',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT
+      updated_at TEXT,
+      setup_token TEXT UNIQUE,
+      setup_token_expires_at TEXT
     );
 
     CREATE TABLE IF NOT EXISTS passkeys (
@@ -131,6 +133,26 @@ function runMigrations(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_passkeys_user_id ON passkeys(user_id);
     CREATE INDEX IF NOT EXISTS idx_passkeys_credential_id ON passkeys(credential_id);
   `)
+
+  // Migrations for existing databases
+  const migrations = [
+    'ALTER TABLE users ADD COLUMN setup_token TEXT',
+    'ALTER TABLE users ADD COLUMN setup_token_expires_at TEXT',
+  ]
+  for (const migration of migrations) {
+    try {
+      sqlite.exec(migration)
+    } catch {
+      // Column already exists, ignore
+    }
+  }
+
+  // Add unique index for setup_token (separate step since ADD COLUMN doesn't support UNIQUE)
+  try {
+    sqlite.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_setup_token ON users(setup_token)')
+  } catch {
+    // Index already exists
+  }
 }
 
 export function closeDb() {

@@ -119,3 +119,17 @@ export async function sendPasswordResetMail(to: string, resetUrl: string, servic
   `
   return sendMail(to, `${serviceName} — Password Reset`, html)
 }
+
+export async function sendSetupMail(to: string, setupUrl: string, serviceName: string) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Welcome to ${serviceName}</h2>
+      <p>An account has been created for you. Click the link below to set up your password:</p>
+      <p><a href="${setupUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 8px;">Set up your account</a></p>
+      <p style="color: #6b7280; font-size: 14px;">If the button doesn't work, copy and paste this URL into your browser:</p>
+      <p style="color: #6b7280; font-size: 14px; word-break: break-all;">${setupUrl}</p>
+      <p style="color: #6b7280; font-size: 14px;">This link expires in 7 days.</p>
+    </div>
+  `
+  return sendMail(to, `Welcome to ${serviceName}`, html)
+}

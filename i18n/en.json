@@ -155,6 +155,8 @@
     "emptyFolder": "This folder is empty",
     "noFiles": "No files yet. Upload something!",
     "fileMissing": "File missing",
+    "previewNotSupported": "No preview available for this file format",
+    "previewError": "Could not load file content",
     "deleteSelected": "Delete selected",
     "deleteSelectedConfirm": "Are you sure you want to delete {count} selected items?",
     "selectAll": "Select all",

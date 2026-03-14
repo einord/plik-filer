@@ -40,6 +40,7 @@ const newFolderName = ref('')
 const dragOver = ref(false)
 const error = ref('')
 const storageStats = ref<{ totalFiles: number; totalUsed: number; maxAllowed: number; percentage: number } | null>(null)
+const previewFile = ref<FileItem | null>(null)
 
 // Share dialog state
 const showShareDialog = ref(false)
@@ -500,6 +501,7 @@ onMounted(() => {
         @download="downloadFile"
         @delete="deleteFile"
         @share="openShareDialog"
+        @preview="previewFile = $event"
       />
 
       <!-- Empty state -->
@@ -536,9 +538,17 @@ onMounted(() => {
         @navigate-folder="navigateToFolder"
         @download="downloadFile"
         @delete="deleteFile"
+        @preview="previewFile = $event"
       />
       <div v-else class="empty-state">{{ $t('files.noFiles') }}</div>
     </div>
+
+    <!-- File preview modal -->
+    <FilePreview
+      v-if="previewFile"
+      :file="previewFile"
+      @close="previewFile = null"
+    />
   </div>
 </template>
 

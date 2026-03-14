@@ -22,6 +22,7 @@ const newFolderName = ref('')
 const dragOver = ref(false)
 const error = ref('')
 const uploading = ref(false)
+const previewFile = ref<FileItem | null>(null)
 
 async function loadFiles(parentId: number | null = null) {
   loading.value = true
@@ -266,6 +267,7 @@ onMounted(() => {
         @navigate-folder="navigateToFolder"
         @download="downloadFile"
         @delete="deleteFile"
+        @preview="previewFile = $event"
       />
 
       <!-- Empty state -->
@@ -288,6 +290,14 @@ onMounted(() => {
         <p>{{ $t('files.dragAndDrop') }}</p>
       </div>
     </div>
+
+    <!-- File preview modal -->
+    <FilePreview
+      v-if="previewFile"
+      :file="previewFile"
+      download-base-url="/api/admin/files/download"
+      @close="previewFile = null"
+    />
   </div>
 </template>
 

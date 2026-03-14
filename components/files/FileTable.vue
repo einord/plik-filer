@@ -29,6 +29,7 @@ defineEmits<{
   download: [file: FileItem]
   delete: [file: FileItem]
   share: [fileIds: number[]]
+  preview: [file: FileItem]
 }>()
 
 function formatSize(bytes: number): string {
@@ -56,7 +57,7 @@ function formatSize(bytes: number): string {
       :class="{ selected: selectedIds.has(file.id), 'file-missing': file.missing }"
       @click="$emit('toggleSelect', file.id)"
     >
-      <div class="file-col-thumb">
+      <div class="file-col-thumb" @click.stop="!file.isDirectory && !file.missing && $emit('preview', file)">
         <div v-if="file.missing" class="file-icon file-icon-missing">
           <HugeiconsIcon :icon="Alert02Icon" :size="24" />
         </div>
@@ -66,10 +67,10 @@ function formatSize(bytes: number): string {
         <img
           v-else-if="file.thumbnailPath"
           :src="`${thumbnailBaseUrl}/${file.id}`"
-          class="thumbnail"
+          class="thumbnail thumbnail-clickable"
           loading="lazy"
         />
-        <div v-else class="file-icon">
+        <div v-else class="file-icon file-icon-clickable">
           <HugeiconsIcon :icon="File02Icon" :size="24" />
         </div>
       </div>
@@ -201,6 +202,24 @@ function formatSize(bytes: number): string {
   height: 36px;
   border-radius: var(--radius-sm);
   object-fit: cover;
+}
+
+.thumbnail-clickable {
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.thumbnail-clickable:hover {
+  opacity: 0.75;
+}
+
+.file-icon-clickable {
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.file-icon-clickable:hover {
+  color: var(--color-primary-500);
 }
 
 .file-icon {

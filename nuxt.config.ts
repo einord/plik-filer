@@ -9,6 +9,10 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  components: [
+    { path: '~/components', pathPrefix: false },
+  ],
+
   i18n: {
     locales: [
       { code: 'sv', name: 'Svenska', file: 'sv.json' },

@@ -28,23 +28,17 @@ async function loadPasskeys() {
   }
 }
 
-const showPasskeyConfirm = ref(false)
 
-function promptAddPasskey() {
-  showPasskeyConfirm.value = true
-}
+const { createCredential, abort: abortWebAuthn } = useWebAuthn()
 
-// AbortController for cancelling passkey operations
-let passkeyAbortController: AbortController | null = null
+let passkeyInProgress = false
 
 async function addPasskey() {
-  showPasskeyConfirm.value = false
+  if (passkeyInProgress) return
+  passkeyInProgress = true
   passkeyLoading.value = true
   error.value = ''
   success.value = ''
-
-  // Create abort controller so we can cancel if needed
-  passkeyAbortController = new AbortController()
 
   let options: any
   try {
@@ -77,23 +71,18 @@ async function addPasskey() {
 
   let credential: PublicKeyCredential | null
   try {
-    credential = await navigator.credentials.create({
-      publicKey,
-      signal: passkeyAbortController.signal,
-    }) as PublicKeyCredential | null
+    credential = await createCredential(publicKey)
   } catch (e: any) {
     passkeyLoading.value = false
-    passkeyAbortController = null
-    // User cancelled — not an error
+    passkeyInProgress = false
     if (e.name === 'NotAllowedError' || e.name === 'AbortError') return
     error.value = e.message || t('errors.serverError')
     return
   }
 
-  passkeyAbortController = null
-
   if (!credential) {
     passkeyLoading.value = false
+    passkeyInProgress = false
     return
   }
 
@@ -123,14 +112,13 @@ async function addPasskey() {
   }
 
   passkeyLoading.value = false
+  passkeyInProgress = false
 }
 
 function cancelPasskeyRegistration() {
-  if (passkeyAbortController) {
-    passkeyAbortController.abort()
-    passkeyAbortController = null
-  }
+  abortWebAuthn()
   passkeyLoading.value = false
+  passkeyInProgress = false
 }
 
 function base64urlToBuffer(base64url: string): ArrayBuffer {
@@ -375,20 +363,10 @@ function handleLocaleChange(newLocale: string) {
         {{ $t('auth.passkeyDescription') }}
       </p>
 
-      <!-- Confirmation dialog before starting WebAuthn -->
-      <div v-if="showPasskeyConfirm" class="passkey-confirm card">
-        <p>{{ $t('settings.passkeyConfirmMessage') }}</p>
-        <div style="display: flex; gap: var(--space-2); margin-top: var(--space-3);">
-          <PBtn @click="addPasskey">{{ $t('common.confirm') }}</PBtn>
-          <PBtn variant="ghost" @click="showPasskeyConfirm = false">{{ $t('common.cancel') }}</PBtn>
-        </div>
-      </div>
-
       <PBtn
-        v-else
         :disabled="passkeyLoading"
         :loading="passkeyLoading"
-        @click="promptAddPasskey"
+        @click="addPasskey"
       >
         {{ $t('settings.addPasskey') }}
       </PBtn>

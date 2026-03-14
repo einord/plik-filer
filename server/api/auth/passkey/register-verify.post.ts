@@ -35,13 +35,16 @@ export default defineEventHandler(async (event) => {
 
   const db = useDb()
 
-  // Store credential in base64url encoding
-  const credentialIdBase64url = Buffer.from(credential.id).toString('base64url')
-  const publicKeyBase64url = Buffer.from(credential.publicKey).toString('base64url')
+  // In simplewebauthn v13, credential.id is already a base64url string
+  // and credential.publicKey is a Uint8Array
+  const credentialId = credential.id
+  const publicKeyBase64url = typeof credential.publicKey === 'string'
+    ? credential.publicKey
+    : Buffer.from(credential.publicKey).toString('base64url')
 
   await db.insert(passkeys).values({
     userId: user.id,
-    credentialId: credentialIdBase64url,
+    credentialId,
     publicKey: publicKeyBase64url,
     counter: credential.counter,
     transports: body.response?.transports ? JSON.stringify(body.response.transports) : null,

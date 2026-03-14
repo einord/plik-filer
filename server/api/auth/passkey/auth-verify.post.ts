@@ -19,14 +19,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Challenge expired or not found' })
   }
 
-  // Look up the passkey by credential ID
-  const credentialIdFromResponse = authResponse.id
+  // Look up the passkey by credential ID (base64url string from the browser)
   const db = useDb()
 
   const [passkey] = await db
     .select()
     .from(passkeys)
-    .where(eq(passkeys.credentialId, credentialIdFromResponse))
+    .where(eq(passkeys.credentialId, authResponse.id))
     .limit(1)
 
   if (!passkey) {

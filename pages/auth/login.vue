@@ -27,7 +27,11 @@ async function handleSubmit() {
   }
 }
 
+let passkeyInProgress = false
+
 async function handlePasskeyLogin() {
+  if (passkeyInProgress) return
+  passkeyInProgress = true
   passkeyLoading.value = true
   error.value = ''
 
@@ -35,14 +39,14 @@ async function handlePasskeyLogin() {
     await loginWithPasskey(form.email || undefined)
     await navigateTo('/files')
   } catch (e: any) {
-    // User may have cancelled the browser dialog
-    if (e.name === 'NotAllowedError') {
-      error.value = t('auth.loginFailed')
+    if (e.name === 'NotAllowedError' || e.name === 'AbortError') {
+      // User cancelled — not an error
     } else {
       error.value = e.data?.statusMessage || e.message || t('auth.loginFailed')
     }
   } finally {
     passkeyLoading.value = false
+    passkeyInProgress = false
   }
 }
 </script>

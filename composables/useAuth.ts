@@ -50,27 +50,29 @@ export function useAuth() {
   }
 
   async function loginWithPasskey(email?: string) {
+    const { getCredential } = useWebAuthn()
+
     const options = await $fetch('/api/auth/passkey/auth-options', {
       method: 'POST',
       body: { email },
     })
 
-    // Call navigator.credentials.get directly to avoid Safari issues with dynamic imports
-    const publicKey: any = {
-      ...options,
+    // Build clean PublicKeyCredentialRequestOptions
+    const publicKey: PublicKeyCredentialRequestOptions = {
       challenge: _base64urlToBuffer(options.challenge),
+      rpId: options.rpId,
+      timeout: options.timeout || 60000,
+      userVerification: options.userVerification || 'preferred',
     }
-    if (publicKey.allowCredentials) {
-      publicKey.allowCredentials = publicKey.allowCredentials.map((c: any) => ({
-        ...c,
+    if (options.allowCredentials) {
+      (publicKey as any).allowCredentials = options.allowCredentials.map((c: any) => ({
         id: _base64urlToBuffer(c.id),
+        type: 'public-key' as const,
+        transports: c.transports,
       }))
     }
-    // Remove non-WebAuthn fields
-    delete publicKey.challengeKey
-    delete publicKey.hints
 
-    const credential = await navigator.credentials.get({ publicKey }) as PublicKeyCredential
+    const credential = await getCredential(publicKey)
     if (!credential) throw new Error('No credential returned')
 
     const response = credential.response as AuthenticatorAssertionResponse

@@ -1,14 +1,34 @@
 <script setup lang="ts">
 import type { FileItem } from '~/types'
+import { HugeiconsIcon } from '@hugeicons/vue'
 import {
   Upload04Icon,
   FolderAddIcon,
   ArrowLeft01Icon,
+  PauseIcon,
+  PlayIcon,
+  Cancel01Icon,
+  Tick02Icon,
+  Alert02Icon,
+  Loading03Icon,
 } from '@hugeicons/core-free-icons'
 
 const { t } = useI18n()
 const route = useRoute()
 const userId = Number(route.params.id)
+
+const {
+  uploads,
+  isUploading,
+  uploadFiles,
+  pauseUpload,
+  resumeUpload,
+  cancelUpload,
+  clearUploads,
+  onAllComplete,
+  formatSpeed,
+  formatTime,
+} = useUpload()
 
 const fileInputEl = ref<HTMLInputElement | null>(null)
 const files = ref<FileItem[]>([])
@@ -22,8 +42,18 @@ const newFolderName = ref('')
 const dragOver = ref(false)
 const error = ref('')
 const breadcrumbDropTarget = ref<number | null | undefined>(undefined)
-const uploading = ref(false)
 const previewFile = ref<FileItem | null>(null)
+
+function getStatusIconComponent(status: string) {
+  switch (status) {
+    case 'pending': return Loading03Icon
+    case 'uploading': return Upload04Icon
+    case 'paused': return PauseIcon
+    case 'complete': return Tick02Icon
+    case 'error': return Alert02Icon
+    default: return null
+  }
+}
 
 async function loadFiles(parentId: number | null = null) {
   loading.value = true
@@ -71,27 +101,18 @@ async function handleDrop(event: DragEvent) {
 }
 
 async function doUpload(fileList: File[]) {
-  uploading.value = true
-  error.value = ''
   try {
-    const formData = new FormData()
-    for (const file of fileList) {
-      formData.append('files', file)
-    }
-    if (currentFolderId.value) {
-      formData.append('parentId', String(currentFolderId.value))
-    }
-    await $fetch(`/api/admin/files/${userId}/upload`, {
-      method: 'POST',
-      body: formData,
-    })
-    await loadFiles(currentFolderId.value)
+    await uploadFiles(fileList, currentFolderId.value, { targetUserId: String(userId) })
   } catch (e: any) {
-    error.value = e.data?.statusMessage || t('files.uploadFailed')
-  } finally {
-    uploading.value = false
+    error.value = e.message || t('files.uploadFailed')
   }
 }
+
+// Register callback for when all uploads finish
+onAllComplete(async () => {
+  await loadFiles(currentFolderId.value)
+  setTimeout(() => clearUploads(), 3000)
+})
 
 async function createFolder() {
   if (!newFolderName.value.trim()) return
@@ -254,9 +275,98 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Upload progress -->
-    <div v-if="uploading" class="upload-indicator">
-      {{ $t('files.uploading') }}
+    <!-- Upload progress list -->
+    <div v-if="uploads.size > 0" class="upload-progress-list">
+      <div v-for="[id, upload] in uploads" :key="id" class="upload-progress-item card">
+        <div class="upload-header">
+          <div class="upload-file-info">
+            <span
+              class="upload-status-badge"
+              :class="{
+                'badge-uploading': upload.status === 'uploading',
+                'badge-paused': upload.status === 'paused',
+                'badge-complete': upload.status === 'complete',
+                'badge-error': upload.status === 'error',
+                'badge-pending': upload.status === 'pending',
+              }"
+            >
+              <HugeiconsIcon
+                v-if="getStatusIconComponent(upload.status)"
+                :icon="getStatusIconComponent(upload.status)!"
+                :size="12"
+                :class="{ 'icon-spin': upload.status === 'pending' }"
+              />
+            </span>
+            <span class="upload-filename truncate">{{ upload.filename }}</span>
+          </div>
+          <div class="upload-controls">
+            <PBtn
+              v-if="upload.status === 'uploading'"
+              variant="ghost"
+              size="sm"
+              :icon="PauseIcon"
+              icon-only
+              @click="pauseUpload(id)"
+              :title="$t('files.pauseUpload')"
+            />
+            <PBtn
+              v-else-if="upload.status === 'paused'"
+              variant="ghost"
+              size="sm"
+              :icon="PlayIcon"
+              icon-only
+              @click="resumeUpload(id)"
+              :title="$t('files.resumeUpload')"
+            />
+            <PBtn
+              v-if="upload.status === 'uploading' || upload.status === 'paused' || upload.status === 'pending'"
+              variant="ghost"
+              size="sm"
+              :icon="Cancel01Icon"
+              icon-only
+              class="upload-cancel-btn"
+              @click="cancelUpload(id)"
+              :title="$t('files.cancelUpload')"
+            />
+          </div>
+        </div>
+
+        <div class="upload-details">
+          <span v-if="upload.status === 'uploading'" class="upload-stats">
+            {{ upload.percentage }}%
+            <span class="upload-separator">&middot;</span>
+            {{ formatSpeed(upload.speed) }}
+            <span v-if="upload.timeRemaining > 0" class="upload-separator">&middot;</span>
+            <span v-if="upload.timeRemaining > 0">
+              {{ $t('files.timeRemaining', { time: formatTime(upload.timeRemaining) }) }}
+            </span>
+          </span>
+          <span v-else-if="upload.status === 'paused'" class="upload-stats upload-stats-paused">
+            {{ upload.percentage }}% &middot; {{ $t('files.pauseUpload').replace('Pausa u', 'Pausad u').replace('Pause u', 'Paused') }}
+          </span>
+          <span v-else-if="upload.status === 'complete'" class="upload-stats upload-stats-complete">
+            {{ $t('files.uploadComplete') }}
+          </span>
+          <span v-else-if="upload.status === 'error'" class="upload-stats upload-stats-error">
+            {{ upload.error }}
+          </span>
+          <span v-else-if="upload.status === 'pending'" class="upload-stats upload-stats-pending">
+            {{ $t('common.loading') }}
+          </span>
+        </div>
+
+        <div class="progress-bar">
+          <div
+            class="progress-bar-fill"
+            :class="{
+              'progress-error': upload.status === 'error',
+              'progress-done': upload.status === 'complete',
+              'progress-paused': upload.status === 'paused',
+            }"
+            :style="{ width: `${upload.percentage}%` }"
+          />
+        </div>
+      </div>
     </div>
 
     <NewFolderDialog
@@ -391,14 +501,76 @@ onMounted(() => {
   gap: var(--space-2);
 }
 
-.upload-indicator {
+.upload-progress-list {
   margin-bottom: var(--space-4);
-  padding: var(--space-3);
-  background-color: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
+
+.upload-progress-item {
+  padding: var(--space-3);
+}
+
+.upload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.upload-file-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1;
+}
+
+.upload-filename {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.upload-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.badge-uploading { background-color: rgba(59, 130, 246, 0.15); color: var(--color-primary-500); }
+.badge-paused { background-color: rgba(245, 158, 11, 0.15); color: var(--color-warning); }
+.badge-complete { background-color: rgba(34, 197, 94, 0.15); color: var(--color-success); }
+.badge-error { background-color: rgba(239, 68, 68, 0.15); color: var(--color-error); }
+.badge-pending { background-color: rgba(107, 114, 128, 0.15); color: var(--text-secondary); }
+
+.upload-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.upload-cancel-btn { color: var(--color-error); }
+.upload-cancel-btn:hover:not(:disabled) { color: var(--color-error); background-color: rgba(239, 68, 68, 0.1); }
+
+.upload-details { margin-bottom: var(--space-2); }
+.upload-stats { font-size: var(--text-xs); color: var(--text-secondary); }
+.upload-separator { margin: 0 var(--space-1); }
+.upload-stats-paused { color: var(--color-warning); }
+.upload-stats-complete { color: var(--color-success); }
+.upload-stats-error { color: var(--color-error); }
+.upload-stats-pending { color: var(--text-tertiary); }
+
+.progress-error { background-color: var(--color-error) !important; }
+.progress-done { background-color: var(--color-success) !important; }
+.progress-paused { background-color: var(--color-warning) !important; }
 
 .drop-zone {
   position: relative;

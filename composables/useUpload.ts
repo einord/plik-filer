@@ -17,7 +17,7 @@ interface TusUploadEntry {
 export function useUpload() {
   const uploads = ref<Map<string, UploadProgress>>(new Map())
   const tusUploads = new Map<string, TusUploadEntry>()
-  const pendingQueue: { file: File; parentId?: number | null; id: string }[] = []
+  const pendingQueue: { file: File; parentId?: number | null; id: string; extraMetadata?: Record<string, string> }[] = []
   let activeCount = 0
 
   const isUploading = computed(() => {
@@ -83,14 +83,14 @@ export function useUpload() {
   function processQueue() {
     while (activeCount < MAX_CONCURRENT_UPLOADS && pendingQueue.length > 0) {
       const next = pendingQueue.shift()!
-      startTusUpload(next.file, next.parentId, next.id)
+      startTusUpload(next.file, next.parentId, next.id, next.extraMetadata)
     }
   }
 
   /**
    * Initiates a tus upload for a single file.
    */
-  async function startTusUpload(file: File, parentId?: number | null, id?: string) {
+  async function startTusUpload(file: File, parentId?: number | null, id?: string, extraMetadata?: Record<string, string>) {
     const { Upload: TusUpload } = await import('tus-js-client')
     const uploadId = id || `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
@@ -99,6 +99,7 @@ export function useUpload() {
     const metadata: Record<string, string> = {
       filename: file.name,
       filetype: file.type || 'application/octet-stream',
+      ...extraMetadata,
     }
     if (parentId != null) {
       metadata.parentId = String(parentId)
@@ -207,7 +208,7 @@ export function useUpload() {
    * Uploads files using the tus resumable upload protocol.
    * Supports concurrent uploads with pause/resume/cancel per file.
    */
-  async function uploadFiles(fileList: File[], parentId?: number | null) {
+  async function uploadFiles(fileList: File[], parentId?: number | null, extraMetadata?: Record<string, string>) {
     for (const file of fileList) {
       const id = `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
@@ -224,9 +225,9 @@ export function useUpload() {
       })
 
       if (activeCount < MAX_CONCURRENT_UPLOADS) {
-        startTusUpload(file, parentId, id)
+        startTusUpload(file, parentId, id, extraMetadata)
       } else {
-        pendingQueue.push({ file, parentId, id })
+        pendingQueue.push({ file, parentId, id, extraMetadata })
       }
     }
 

@@ -99,15 +99,34 @@ export function getTusServer(): InstanceType<typeof Server> {
       const originalFilename = upload.metadata?.filename || `upload_${Date.now()}`
       const parentIdStr = upload.metadata?.parentId
       const filetype = upload.metadata?.filetype || undefined
+      const targetUserIdStr = upload.metadata?.targetUserId
+
+      // Allow admins to upload on behalf of another user
+      let targetUserId = user.id
+      if (targetUserIdStr && user.role === 'admin') {
+        targetUserId = Number(targetUserIdStr)
+      }
 
       const filename = sanitizeFilename(originalFilename)
       const parentId = parentIdStr ? Number(parentIdStr) : null
 
+      // Look up target user's quota if uploading for another user
+      let targetUser = user
+      if (targetUserId !== user.id) {
+        const [tu] = await db.select().from(users)
+          .where(eq(users.id, targetUserId))
+          .limit(1)
+        if (!tu) {
+          throw { status_code: 404, body: 'Target user not found' }
+        }
+        targetUser = tu
+      }
+
       const fileSize = upload.size || upload.offset
-      if (fileSize > user.maxFileSize) {
+      if (fileSize > targetUser.maxFileSize) {
         throw {
           status_code: 413,
-          body: `File ${filename} exceeds size limit of ${formatFileSize(user.maxFileSize)}`,
+          body: `File ${filename} exceeds size limit of ${formatFileSize(targetUser.maxFileSize)}`,
         }
       }
 
@@ -115,18 +134,18 @@ export function getTusServer(): InstanceType<typeof Server> {
       const [storageCheck] = await db
         .select({ totalUsed: sum(files.size) })
         .from(files)
-        .where(and(eq(files.userId, user.id), eq(files.isDirectory, false)))
+        .where(and(eq(files.userId, targetUserId), eq(files.isDirectory, false)))
 
       const currentUsage = Number(storageCheck?.totalUsed || 0)
-      if (currentUsage + fileSize > user.maxFileSize) {
+      if (currentUsage + fileSize > targetUser.maxFileSize) {
         throw {
           status_code: 413,
-          body: `Upload exceeds your storage quota. Used: ${formatFileSize(currentUsage)}, Limit: ${formatFileSize(user.maxFileSize)}`,
+          body: `Upload exceeds storage quota. Used: ${formatFileSize(currentUsage)}, Limit: ${formatFileSize(targetUser.maxFileSize)}`,
         }
       }
 
       // Determine target directory
-      const userDir = getUserDir(user.id)
+      const userDir = getUserDir(targetUserId)
       let targetDir = userDir
 
       if (parentId) {
@@ -165,11 +184,11 @@ export function getTusServer(): InstanceType<typeof Server> {
       const mimeType = filetype || getMimeType(filename)
       let thumbnailPath = null
       if (isImageFile(filename) || isVideoFile(filename)) {
-        thumbnailPath = await generateThumbnail(user.id, destFilePath, filename)
+        thumbnailPath = await generateThumbnail(targetUserId, destFilePath, filename)
       }
 
       await db.insert(files).values({
-        userId: user.id,
+        userId: targetUserId,
         filename,
         storageName,
         path: relativePath,

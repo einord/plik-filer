@@ -24,6 +24,10 @@ const props = withDefaults(defineProps<{
   type: 'button',
 })
 
+defineEmits<{
+  click: [event: MouseEvent]
+}>()
+
 const iconSize = computed(() => {
   if (props.size === 'sm') return 16
   if (props.size === 'lg') return 20

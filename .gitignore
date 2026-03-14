@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+
+# Nuxt
+.nuxt
+.output
+dist
+
+# Environment
+.env
+.env.local
+
+# Data (user files and database)
+data/
+database/
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo

@@ -1,0 +1,47 @@
+{
+  "name": "plik-filer",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "generate": "nuxt generate",
+    "postinstall": "nuxt prepare",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "^4.0.0",
+    "@hugeicons/vue": "^1.0.5",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.0",
+    "@tus/file-store": "^2.0.0",
+    "@tus/server": "^2.3.0",
+    "archiver": "^7.0.1",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.8.0",
+    "drizzle-orm": "^0.45.1",
+    "nanoid": "^5.1.6",
+    "nodemailer": "^8.0.2",
+    "nuxt": "^4.4.2",
+    "sharp": "^0.34.5",
+    "tus-js-client": "^4.3.1",
+    "vue": "^3.5.30",
+    "vue-router": "^5.0.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@nuxtjs/color-mode": "^4.0.0",
+    "@nuxtjs/i18n": "^10.2.3",
+    "@types/archiver": "^7.0.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.5.0",
+    "@types/nodemailer": "^7.0.11",
+    "@vueuse/nuxt": "^14.2.1",
+    "drizzle-kit": "^0.31.9",
+    "typescript": "^5.9.3"
+  }
+}

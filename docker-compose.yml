@@ -1,0 +1,21 @@
+services:
+  plik-filer:
+    build: .
+    container_name: plik-filer
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # User files — on Synology, change to e.g. /volume1/plik-filer/data:/app/data
+      - ./data:/app/data
+      # SQLite database — on Synology, change to e.g. /volume1/plik-filer/database:/app/database
+      - ./database:/app/database
+    environment:
+      - NODE_ENV=production
+      # IMPORTANT: Change this to a long random secret
+      - NUXT_JWT_SECRET=change-this-to-a-random-secret
+      - NUXT_DATA_PATH=/app/data
+      - NUXT_DATABASE_PATH=/app/database/plik.db
+      - NUXT_PUBLIC_APP_NAME=plik Filer
+      # Change to your actual domain
+      - NUXT_ORIGIN=https://files.example.com

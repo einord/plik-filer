@@ -15,9 +15,9 @@ FROM node:20-alpine
 # Install ffmpeg for video thumbnail generation
 RUN apk add --no-cache ffmpeg curl
 
-# Create non-root user
-RUN addgroup -g 1000 plik && \
-    adduser -u 1000 -G plik -s /bin/sh -D plik
+# Create non-root user (use node user's existing group, pick a free UID/GID)
+RUN addgroup -g 1001 plik && \
+    adduser -u 1001 -G plik -s /bin/sh -D plik
 
 WORKDIR /app
 

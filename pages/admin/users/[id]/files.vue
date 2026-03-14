@@ -15,6 +15,7 @@ const { t } = useI18n()
 const route = useRoute()
 const userId = Number(route.params.id)
 
+const fileInputEl = ref<HTMLInputElement | null>(null)
 const files = ref<FileItem[]>([])
 const targetUser = ref<{ id: number; name: string; email: string } | null>(null)
 const currentFolderId = ref<number | null>(null)
@@ -211,11 +212,10 @@ onMounted(() => {
         <PBtn variant="secondary" size="sm" :icon="FolderAddIcon" @click="showNewFolder = true">
           {{ $t('files.newFolder') }}
         </PBtn>
-        <label class="btn btn-primary btn-sm upload-btn">
-          <HugeiconsIcon :icon="Upload04Icon" :size="18" />
+        <PBtn size="sm" :icon="Upload04Icon" @click="fileInputEl?.click()">
           {{ $t('admin.uploadToUser') }}
-          <input type="file" multiple hidden @change="handleFileUpload" />
-        </label>
+        </PBtn>
+        <input ref="fileInputEl" type="file" multiple hidden @change="handleFileUpload" />
       </div>
     </div>
 

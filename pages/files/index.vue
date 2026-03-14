@@ -33,6 +33,7 @@ const {
   formatTime,
 } = useUpload()
 
+const fileInputEl = ref<HTMLInputElement | null>(null)
 const files = ref<FileItem[]>([])
 const currentFolderId = ref<number | null>(null)
 const breadcrumbs = ref<{ id: number | null; name: string }[]>([])
@@ -285,11 +286,10 @@ onMounted(() => {
         <PBtn variant="secondary" size="sm" :icon="FolderAddIcon" @click="showNewFolder = true">
           {{ $t('files.newFolder') }}
         </PBtn>
-        <label class="btn btn-primary btn-sm upload-btn">
-          <HugeiconsIcon :icon="Upload04Icon" :size="18" />
+        <PBtn size="sm" :icon="Upload04Icon" @click="fileInputEl?.click()">
           {{ $t('files.upload') }}
-          <input type="file" multiple hidden @change="handleFileUpload" />
-        </label>
+        </PBtn>
+        <input ref="fileInputEl" type="file" multiple hidden @change="handleFileUpload" />
       </div>
     </div>
 

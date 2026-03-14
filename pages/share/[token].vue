@@ -20,6 +20,15 @@ function formatSize(bytes: number): string {
 function downloadFile(fileId: number) {
   window.open(`/api/shares/public/download/${fileId}?token=${token}`, '_blank')
 }
+
+function downloadAll() {
+  window.open(`/api/shares/public/download-zip/${token}`, '_blank')
+}
+
+const totalSize = computed(() => {
+  if (!data.value?.files) return 0
+  return data.value.files.reduce((sum: number, f: any) => sum + (f.size || 0), 0)
+})
 </script>
 
 <template>
@@ -36,7 +45,15 @@ function downloadFile(fileId: number) {
       </h1>
       <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-6);">
         {{ $t('share.expiresAt', { date: new Date(data.expiresAt).toLocaleDateString() }) }}
+        · {{ data.files.length }} {{ $t('files.files').toLowerCase() }}
+        · {{ formatSize(totalSize) }}
       </p>
+
+      <div v-if="data.files.length > 1" style="margin-bottom: var(--space-4);">
+        <PBtn :icon="Download04Icon" @click="downloadAll">
+          {{ $t('files.downloadAll') }} ({{ formatSize(totalSize) }})
+        </PBtn>
+      </div>
 
       <div class="share-file-list">
         <div v-for="file in data.files" :key="file.id" class="share-file-item">

@@ -1,6 +1,4 @@
-import { mkdirSync, existsSync } from 'fs'
-import { join } from 'path'
-import { eq } from 'drizzle-orm'
+import { eq, and, isNull } from 'drizzle-orm'
 import { files, users } from '../../../../database/schema'
 
 export default defineEventHandler(async (event) => {
@@ -11,7 +9,6 @@ export default defineEventHandler(async (event) => {
 
   const db = useDb()
 
-  // Validate that the target user exists
   const [targetUser] = await db.select().from(users)
     .where(eq(users.id, userId))
     .limit(1)
@@ -28,32 +25,24 @@ export default defineEventHandler(async (event) => {
   }
 
   const folderName = sanitizeFilename(name)
-  const userDir = getUserDir(userId)
 
-  let targetDir = userDir
-  let relativePath = folderName
+  // Check for duplicate folder name in same parent
+  const existing = await db.select().from(files)
+    .where(
+      parentId
+        ? and(eq(files.userId, userId), eq(files.filename, folderName), eq(files.parentId, parentId), eq(files.isDirectory, true))
+        : and(eq(files.userId, userId), eq(files.filename, folderName), isNull(files.parentId), eq(files.isDirectory, true))
+    )
+    .limit(1)
 
-  if (parentId) {
-    const [parentFolder] = await db.select().from(files)
-      .where(eq(files.id, parentId))
-      .limit(1)
-    if (parentFolder && parentFolder.isDirectory) {
-      targetDir = join(userDir, parentFolder.path)
-      relativePath = join(parentFolder.path, folderName)
-    }
-  }
-
-  const fullPath = join(targetDir, folderName)
-  if (existsSync(fullPath)) {
+  if (existing.length > 0) {
     throw createError({ statusCode: 409, statusMessage: 'Folder already exists' })
   }
-
-  mkdirSync(fullPath, { recursive: true })
 
   const [folder] = await db.insert(files).values({
     userId,
     filename: folderName,
-    path: relativePath,
+    path: folderName,
     size: 0,
     isDirectory: true,
     parentId: parentId || null,

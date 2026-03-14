@@ -154,6 +154,7 @@
     "folderName": "Mappnamn",
     "emptyFolder": "Mappen är tom",
     "noFiles": "Inga filer ännu. Ladda upp något!",
+    "fileMissing": "Filen saknas",
     "selectAll": "Markera alla",
     "deselectAll": "Avmarkera alla",
     "zipDownloading": "Skapar zip-fil...",

@@ -1,7 +1,8 @@
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { existsSync, mkdirSync } from 'fs'
-import { dirname } from 'path'
+import { existsSync, mkdirSync, renameSync } from 'fs'
+import { dirname, join } from 'path'
+import { randomUUID } from 'crypto'
 import * as schema from '../database/schema'
 
 let _db: ReturnType<typeof drizzle> | null = null
@@ -138,6 +139,7 @@ function runMigrations(sqlite: Database.Database) {
   const migrations = [
     'ALTER TABLE users ADD COLUMN setup_token TEXT',
     'ALTER TABLE users ADD COLUMN setup_token_expires_at TEXT',
+    'ALTER TABLE files ADD COLUMN storage_name TEXT',
   ]
   for (const migration of migrations) {
     try {
@@ -152,6 +154,33 @@ function runMigrations(sqlite: Database.Database) {
     sqlite.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_setup_token ON users(setup_token)')
   } catch {
     // Index already exists
+  }
+
+  // Migrate existing files to UUID-based storage names
+  try {
+    const filesToMigrate = sqlite.prepare(
+      'SELECT id, user_id, path, filename FROM files WHERE is_directory = 0 AND storage_name IS NULL'
+    ).all() as Array<{ id: number; user_id: number; path: string; filename: string }>
+
+    for (const row of filesToMigrate) {
+      try {
+        const uuid = randomUUID()
+        const userDir = join(getDataPath(), String(row.user_id))
+        const oldFilePath = join(userDir, row.path)
+        const newFilePath = join(userDir, uuid)
+
+        if (existsSync(oldFilePath)) {
+          renameSync(oldFilePath, newFilePath)
+        }
+
+        sqlite.prepare('UPDATE files SET storage_name = ? WHERE id = ?').run(uuid, row.id)
+        console.log('[migration] Migrated file storage:', row.filename, '->', uuid)
+      } catch (error) {
+        console.error('[migration] Failed to migrate file:', row.filename, error)
+      }
+    }
+  } catch (error) {
+    console.error('[migration] File storage migration failed:', error)
   }
 }
 

@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const userDir = getUserDir(session.user.id)
-  const fullPath = join(userDir, file.path)
+  const fullPath = join(userDir, file.storageName!)
 
   if (!existsSync(fullPath)) {
     throw createError({ statusCode: 404, statusMessage: 'File not found on disk' })

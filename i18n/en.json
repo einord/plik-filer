@@ -154,6 +154,7 @@
     "folderName": "Folder name",
     "emptyFolder": "This folder is empty",
     "noFiles": "No files yet. Upload something!",
+    "fileMissing": "File missing",
     "selectAll": "Select all",
     "deselectAll": "Deselect all",
     "zipDownloading": "Creating zip file...",

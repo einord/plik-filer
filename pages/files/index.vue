@@ -514,14 +514,17 @@ onMounted(() => {
           v-for="file in files"
           :key="file.id"
           class="file-row"
-          :class="{ selected: selectedIds.has(file.id) }"
+          :class="{ selected: selectedIds.has(file.id), 'file-missing': file.missing }"
         >
           <div class="file-col-check">
             <input type="checkbox" :checked="selectedIds.has(file.id)" @change="toggleSelect(file.id)" />
           </div>
 
           <div class="file-col-thumb">
-            <div v-if="file.isDirectory" class="file-icon folder-icon">
+            <div v-if="file.missing" class="file-icon file-icon-missing">
+              <HugeiconsIcon :icon="Alert02Icon" :size="24" />
+            </div>
+            <div v-else-if="file.isDirectory" class="file-icon folder-icon">
               <HugeiconsIcon :icon="Folder01Icon" :size="24" />
             </div>
             <img
@@ -544,6 +547,7 @@ onMounted(() => {
               {{ file.filename }}
             </button>
             <span v-else class="truncate">{{ file.filename }}</span>
+            <span v-if="file.missing" class="file-missing-label">{{ $t('files.fileMissing') }}</span>
           </div>
 
           <div class="file-col-size">
@@ -556,7 +560,7 @@ onMounted(() => {
 
           <div class="file-col-actions">
             <PBtn
-              v-if="!file.isDirectory"
+              v-if="!file.isDirectory && !file.missing"
               variant="ghost"
               size="sm"
               :icon="Share08Icon"
@@ -565,7 +569,7 @@ onMounted(() => {
               :title="$t('share.shareFile')"
             />
             <PBtn
-              v-if="!file.isDirectory"
+              v-if="!file.isDirectory && !file.missing"
               variant="ghost"
               size="sm"
               :icon="Download04Icon"
@@ -928,6 +932,21 @@ onMounted(() => {
 
 .file-row:hover {
   background-color: var(--bg-secondary);
+}
+
+.file-row.file-missing {
+  opacity: 0.5;
+}
+
+.file-icon-missing {
+  color: var(--color-error);
+}
+
+.file-missing-label {
+  display: inline-block;
+  font-size: var(--text-xs);
+  color: var(--color-error);
+  margin-left: var(--space-2);
 }
 
 .file-row.selected {

@@ -143,8 +143,9 @@ export function getTusServer(): InstanceType<typeof Server> {
       }
 
       // Move the completed file from tus temp directory to user's directory
+      const storageName = generateStorageName()
       const tusFilePath = join(getTusDir(), upload.id)
-      const destFilePath = join(targetDir, filename)
+      const destFilePath = join(userDir, storageName)
       const relativePath = parentId ? join(targetDir.replace(userDir, ''), filename) : filename
 
       try {
@@ -170,6 +171,7 @@ export function getTusServer(): InstanceType<typeof Server> {
       await db.insert(files).values({
         userId: user.id,
         filename,
+        storageName,
         path: relativePath,
         size: actualSize,
         mimeType,

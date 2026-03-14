@@ -34,6 +34,8 @@ export interface FileItem {
   thumbnailPath?: string
   isDirectory: boolean
   parentId?: number
+  storageName?: string
+  missing?: boolean
   createdAt: string
   updatedAt?: string
 }

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, statSync, unlinkSync, rmSync, readdirSync } from
 import { join, extname } from 'path'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
+import { randomUUID } from 'crypto'
 
 const execFileAsync = promisify(execFile)
 
@@ -76,6 +77,10 @@ export async function generateThumbnail(userId: number, filePath: string, filena
   }
 
   return null
+}
+
+export function generateStorageName(): string {
+  return randomUUID()
 }
 
 export function deleteFile(filePath: string) {

@@ -41,7 +41,8 @@ export default defineEventHandler(async (event) => {
   // Add files to archive
   for (const file of selectedFiles) {
     if (file.isDirectory) continue
-    const fullPath = join(userDir, file.path)
+    if (!file.storageName) continue
+    const fullPath = join(userDir, file.storageName)
     if (existsSync(fullPath)) {
       archive.file(fullPath, { name: file.filename })
     }

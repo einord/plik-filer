@@ -17,14 +17,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'File not found' })
   }
 
-  const userDir = getUserDir(file.userId)
-  const fullPath = join(userDir, file.path)
-
-  if (file.isDirectory) {
-    deleteDirectory(fullPath)
-  } else {
+  if (!file.isDirectory && file.storageName) {
+    const userDir = getUserDir(file.userId)
+    const fullPath = join(userDir, file.storageName)
     deleteFile(fullPath)
-    // Delete thumbnail
     if (file.thumbnailPath) {
       deleteFile(file.thumbnailPath)
     }

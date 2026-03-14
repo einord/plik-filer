@@ -42,7 +42,8 @@ export default defineEventHandler(async (event) => {
     const file = lf.file
     if (file.isDirectory) continue
     const userDir = getUserDir(file.userId)
-    const fullPath = join(userDir, file.path)
+    if (!file.storageName) continue
+    const fullPath = join(userDir, file.storageName)
     if (existsSync(fullPath)) {
       archive.file(fullPath, { name: file.filename })
     }

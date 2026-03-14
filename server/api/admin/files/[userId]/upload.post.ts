@@ -69,7 +69,8 @@ export default defineEventHandler(async (event) => {
 
     const filename = sanitizeFilename(file.filename)
     const fileSize = file.data.length
-    const filePath = join(targetDir, filename)
+    const storageName = generateStorageName()
+    const filePath = join(userDir, storageName)
     const relativePath = parentId ? join(targetDir.replace(userDir, ''), filename) : filename
 
     writeFileSync(filePath, file.data)
@@ -84,6 +85,7 @@ export default defineEventHandler(async (event) => {
     const [inserted] = await db.insert(files).values({
       userId,
       filename,
+      storageName,
       path: relativePath,
       size: fileSize,
       mimeType,

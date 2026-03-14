@@ -39,6 +39,7 @@ const showNewFolder = ref(false)
 const newFolderName = ref('')
 const dragOver = ref(false)
 const error = ref('')
+const breadcrumbDropTarget = ref<number | null | undefined>(undefined)
 const storageStats = ref<{ totalFiles: number; totalUsed: number; maxAllowed: number; percentage: number } | null>(null)
 const previewFile = ref<FileItem | null>(null)
 
@@ -248,6 +249,19 @@ async function downloadSelected() {
   }
 }
 
+async function moveFiles(fileIds: number[], targetParentId: number | null) {
+  try {
+    await $fetch('/api/files/move', {
+      method: 'POST',
+      body: { fileIds, targetParentId },
+    })
+    selectedIds.value.clear()
+    await loadFiles(currentFolderId.value)
+  } catch (e: any) {
+    error.value = e.data?.statusMessage || t('errors.serverError')
+  }
+}
+
 function toggleSelect(id: number) {
   if (selectedIds.value.has(id)) {
     selectedIds.value.delete(id)
@@ -285,14 +299,30 @@ onMounted(() => {
   <div>
     <div class="page-header">
       <div class="breadcrumbs">
-        <PBtn variant="ghost" size="sm" @click="navigateToFolder(null)">
-          {{ $t('files.files') }}
-        </PBtn>
+        <div
+          class="breadcrumb-item"
+          :class="{ 'breadcrumb-drop-target': breadcrumbDropTarget === null }"
+          @dragover.prevent="breadcrumbDropTarget = null"
+          @dragleave="breadcrumbDropTarget = undefined"
+          @drop.prevent="(e: DragEvent) => { breadcrumbDropTarget = undefined; const raw = e.dataTransfer?.getData('application/json'); if (raw) { try { const { fileIds } = JSON.parse(raw); moveFiles(fileIds, null); } catch {} } }"
+        >
+          <PBtn variant="ghost" size="sm" @click="navigateToFolder(null)">
+            {{ $t('files.files') }}
+          </PBtn>
+        </div>
         <template v-for="crumb in breadcrumbs" :key="crumb.id">
           <span class="breadcrumb-sep">/</span>
-          <PBtn variant="ghost" size="sm" @click="navigateToFolder(crumb.id, crumb.name)">
-            {{ crumb.name }}
-          </PBtn>
+          <div
+            class="breadcrumb-item"
+            :class="{ 'breadcrumb-drop-target': breadcrumbDropTarget === crumb.id }"
+            @dragover.prevent="breadcrumbDropTarget = crumb.id"
+            @dragleave="breadcrumbDropTarget = undefined"
+            @drop.prevent="(e: DragEvent) => { breadcrumbDropTarget = undefined; const raw = e.dataTransfer?.getData('application/json'); if (raw) { try { const { fileIds } = JSON.parse(raw); moveFiles(fileIds, crumb.id); } catch {} } }"
+          >
+            <PBtn variant="ghost" size="sm" @click="navigateToFolder(crumb.id, crumb.name)">
+              {{ crumb.name }}
+            </PBtn>
+          </div>
         </template>
       </div>
 
@@ -474,14 +504,14 @@ onMounted(() => {
       <PBtn variant="ghost" size="sm" @click="error = ''">{{ $t('common.close') }}</PBtn>
     </div>
 
-    <!-- Drop zone -->
+    <!-- Drop zone (only for external file uploads, not internal moves) -->
     <div
       v-if="user?.canWrite"
       class="drop-zone"
       :class="{ 'drag-over': dragOver }"
-      @dragover.prevent="dragOver = true"
+      @dragover.prevent="(e: DragEvent) => { if (e.dataTransfer?.types.includes('Files')) dragOver = true }"
       @dragleave="dragOver = false"
-      @drop.prevent="handleDrop"
+      @drop.prevent="(e: DragEvent) => { dragOver = false; if (e.dataTransfer?.types.includes('Files')) handleDrop(e) }"
     >
       <!-- Loading -->
       <div v-if="loading" class="empty-state">
@@ -502,6 +532,7 @@ onMounted(() => {
         @delete="deleteFile"
         @share="openShareDialog"
         @preview="previewFile = $event"
+        @move-files="moveFiles"
       />
 
       <!-- Empty state -->
@@ -539,6 +570,7 @@ onMounted(() => {
         @download="downloadFile"
         @delete="deleteFile"
         @preview="previewFile = $event"
+        @move-files="moveFiles"
       />
       <div v-else class="empty-state">{{ $t('files.noFiles') }}</div>
     </div>
@@ -566,6 +598,18 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  border-radius: var(--radius-md);
+}
+
+.breadcrumb-drop-target {
+  outline: 2px dashed var(--color-primary-500);
+  outline-offset: -2px;
+  background-color: rgba(59, 130, 246, 0.08);
+  border-radius: var(--radius-md);
 }
 
 .breadcrumb-sep {

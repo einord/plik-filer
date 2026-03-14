@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<{
   canShare: false,
 })
 
-defineEmits<{
+const emit = defineEmits<{
   toggleSelect: [id: number]
   toggleSelectAll: []
   navigateFolder: [id: number, name: string]
@@ -30,7 +30,44 @@ defineEmits<{
   delete: [file: FileItem]
   share: [fileIds: number[]]
   preview: [file: FileItem]
+  moveFiles: [fileIds: number[], targetParentId: number | null]
 }>()
+
+const draggedFileIds = ref<number[]>([])
+const dropTargetId = ref<number | null>(null)
+
+function onDragStart(event: DragEvent, file: FileItem) {
+  if (props.selectedIds.has(file.id) && props.selectedIds.size > 0) {
+    draggedFileIds.value = Array.from(props.selectedIds)
+  } else {
+    draggedFileIds.value = [file.id]
+  }
+  event.dataTransfer?.setData('application/json', JSON.stringify({ fileIds: draggedFileIds.value }))
+  event.dataTransfer!.effectAllowed = 'move'
+}
+
+function onDragOverFolder(event: DragEvent, folder: FileItem) {
+  if (draggedFileIds.value.includes(folder.id)) return
+  event.dataTransfer!.dropEffect = 'move'
+  dropTargetId.value = folder.id
+}
+
+function onDragLeaveFolder() {
+  dropTargetId.value = null
+}
+
+function onDropFolder(event: DragEvent, folder: FileItem) {
+  dropTargetId.value = null
+  const raw = event.dataTransfer?.getData('application/json')
+  if (!raw) return
+  try {
+    const { fileIds } = JSON.parse(raw) as { fileIds: number[] }
+    if (fileIds.includes(folder.id)) return
+    emit('moveFiles', fileIds, folder.id)
+  } catch {
+    // Invalid data
+  }
+}
 
 function formatSize(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -54,7 +91,16 @@ function formatSize(bytes: number): string {
       v-for="file in files"
       :key="file.id"
       class="file-row"
-      :class="{ selected: selectedIds.has(file.id), 'file-missing': file.missing }"
+      :class="{
+        selected: selectedIds.has(file.id),
+        'file-missing': file.missing,
+        'drop-target': file.isDirectory && dropTargetId === file.id,
+      }"
+      draggable="true"
+      @dragstart="onDragStart($event, file)"
+      @dragover.prevent="file.isDirectory ? onDragOverFolder($event, file) : undefined"
+      @dragleave="file.isDirectory ? onDragLeaveFolder() : undefined"
+      @drop.prevent="file.isDirectory ? onDropFolder($event, file) : undefined"
       @click="$emit('toggleSelect', file.id)"
     >
       <div class="file-col-thumb" @click.stop="!file.isDirectory && !file.missing && $emit('preview', file)">
@@ -261,6 +307,20 @@ function formatSize(bytes: number): string {
   display: flex;
   gap: var(--space-1);
   justify-content: flex-end;
+}
+
+.file-row.drop-target {
+  outline: 2px dashed var(--color-primary-500);
+  outline-offset: -2px;
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.file-row[draggable="true"] {
+  cursor: grab;
+}
+
+.file-row[draggable="true"]:active {
+  cursor: grabbing;
 }
 
 @media (max-width: 768px) {

@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { users } from '~~/server/database/schema'
+import { users } from '#db'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)

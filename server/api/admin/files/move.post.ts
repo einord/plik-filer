@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm'
-import { files } from '~~/server/database/schema'
+import { files } from '#db'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

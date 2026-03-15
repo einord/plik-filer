@@ -1,3 +1,5 @@
+import { resolve } from 'path'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-03-14',
 
@@ -46,6 +48,9 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    alias: {
+      '#db': resolve(__dirname, 'server/database/schema'),
+    },
     routeRules: {
       '/api/**': {
         // Allow large file uploads

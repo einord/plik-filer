@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { users, passwordResets, settings } from '~~/server/database/schema'
+import { users, passwordResets, settings } from '#db'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)

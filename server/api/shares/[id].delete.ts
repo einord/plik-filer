@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm'
-import { shareLinks } from '~~/server/database/schema'
+import { shareLinks } from '#db'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)

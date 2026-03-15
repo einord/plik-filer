@@ -2,7 +2,7 @@ import { createReadStream, existsSync } from 'fs'
 import { join } from 'path'
 import { eq } from 'drizzle-orm'
 import archiver from 'archiver'
-import { shareLinks, shareLinkFiles, files } from '~~/server/database/schema'
+import { shareLinks, shareLinkFiles, files } from '#db'
 
 export default defineEventHandler(async (event) => {
   const token = getRouterParam(event, 'token')

@@ -1,5 +1,5 @@
 import { eq, and, inArray } from 'drizzle-orm'
-import { shareLinks, shareLinkFiles, files } from '~~/server/database/schema'
+import { shareLinks, shareLinkFiles, files } from '#db'
 
 /**
  * Recursively collects all non-directory file IDs inside a folder.

@@ -1,4 +1,4 @@
-import { invitations } from '~~/server/database/schema'
+import { invitations } from '#db'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

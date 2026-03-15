@@ -1,5 +1,5 @@
 import { eq, count, sum, desc, and } from 'drizzle-orm'
-import { files, users, shareLinks } from '~~/server/database/schema'
+import { files, users, shareLinks } from '#db'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

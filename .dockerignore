@@ -2,8 +2,9 @@ node_modules
 .nuxt
 .output
 .git
-data
+/data
 /database
+!server/database
 *.md
 .env
 .env.*

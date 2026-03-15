@@ -49,7 +49,7 @@ export default defineNuxtConfig({
 
   nitro: {
     alias: {
-      '#db': resolve(__dirname, 'server/database/schema'),
+      '#db': resolve(__dirname, 'server/database/schema.ts'),
     },
     routeRules: {
       '/api/**': {

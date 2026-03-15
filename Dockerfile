@@ -9,6 +9,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+RUN ls -la server/database/ || echo "server/database/ NOT FOUND"
 RUN pnpm run build
 
 # Stage 2: Production

@@ -3,7 +3,7 @@ node_modules
 .output
 .git
 data
-database
+/database
 *.md
 .env
 .env.*

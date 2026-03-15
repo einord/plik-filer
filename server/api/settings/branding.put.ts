@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { settings } from '../../database/schema'
+import { settings } from '~~/server/database/schema'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

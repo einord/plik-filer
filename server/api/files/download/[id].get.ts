@@ -1,7 +1,7 @@
 import { createReadStream, existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { eq, and } from 'drizzle-orm'
-import { files } from '../../../database/schema'
+import { files } from '~~/server/database/schema'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)

@@ -3,7 +3,7 @@ import { FileStore } from '@tus/file-store'
 import { join } from 'path'
 import { existsSync, mkdirSync, renameSync, statSync, unlinkSync } from 'fs'
 import { eq, and, sum } from 'drizzle-orm'
-import { files } from '../database/schema'
+import { files } from '~~/server/database/schema'
 
 const TUS_UPLOAD_DIR = '.tus-uploads'
 const DEFAULT_MAX_SIZE = 107_374_182_400 // 100 GB

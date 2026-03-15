@@ -2,7 +2,7 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import { eq, inArray } from 'drizzle-orm'
 import archiver from 'archiver'
-import { files } from '../../../database/schema'
+import { files } from '~~/server/database/schema'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

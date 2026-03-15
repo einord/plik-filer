@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { invitations, settings } from '../../database/schema'
+import { invitations, settings } from '~~/server/database/schema'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAdmin(event)

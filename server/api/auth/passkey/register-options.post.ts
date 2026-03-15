@@ -1,6 +1,6 @@
 import { generateRegistrationOptions } from '@simplewebauthn/server'
 import { eq } from 'drizzle-orm'
-import { passkeys } from '../../../database/schema'
+import { passkeys } from '~~/server/database/schema'
 
 export default defineEventHandler(async (event) => {
   const { user } = await requireAuth(event)

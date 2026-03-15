@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { shareLinks, shareLinkFiles, files } from '../../../database/schema'
+import { shareLinks, shareLinkFiles, files } from '~~/server/database/schema'
 
 export default defineEventHandler(async (event) => {
   const token = getRouterParam(event, 'token')

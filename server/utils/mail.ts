@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer'
 import type { Transporter } from 'nodemailer'
 import { eq } from 'drizzle-orm'
-import { settings } from '../database/schema'
+import { settings } from '~~/server/database/schema'
 
 let _transporter: Transporter | null = null
 

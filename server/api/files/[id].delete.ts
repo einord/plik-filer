@@ -1,6 +1,6 @@
 import { eq, and } from 'drizzle-orm'
 import { join } from 'path'
-import { files } from '../../database/schema'
+import { files } from '~~/server/database/schema'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)

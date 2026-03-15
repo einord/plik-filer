@@ -6,8 +6,10 @@ import { File02Icon } from '@hugeicons/core-free-icons'
 const props = withDefaults(defineProps<{
   file: FileItem
   downloadBaseUrl?: string
+  downloadUrlSuffix?: string
 }>(), {
   downloadBaseUrl: '/api/files/download',
+  downloadUrlSuffix: '',
 })
 
 defineEmits<{
@@ -45,7 +47,7 @@ const previewType = computed<'image' | 'video' | 'text' | 'unknown'>(() => {
   return 'unknown'
 })
 
-const fileUrl = computed(() => `${props.downloadBaseUrl}/${props.file.id}`)
+const fileUrl = computed(() => `${props.downloadBaseUrl}/${props.file.id}${props.downloadUrlSuffix}`)
 
 async function loadTextContent() {
   textLoading.value = true

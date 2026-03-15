@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { FileItem } from '~/types'
 import { HugeiconsIcon } from '@hugeicons/vue'
-import { Download04Icon } from '@hugeicons/core-free-icons'
+import { Download04Icon, File02Icon } from '@hugeicons/core-free-icons'
 
 definePageMeta({ layout: 'auth' })
 
@@ -9,6 +10,7 @@ const route = useRoute()
 const token = route.params.token as string
 
 const { data, error } = await useFetch(`/api/shares/public/${token}`)
+const previewFile = ref<FileItem | null>(null)
 
 function formatSize(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -57,6 +59,17 @@ const totalSize = computed(() => {
 
       <div class="share-file-list">
         <div v-for="file in data.files" :key="file.id" class="share-file-item">
+          <div class="share-file-thumb" @click="previewFile = file">
+            <img
+              v-if="file.thumbnailPath || file.hasThumbnail"
+              :src="`/api/shares/public/thumbnail/${file.id}?token=${token}`"
+              class="thumbnail"
+              loading="lazy"
+            />
+            <div v-else class="file-icon">
+              <HugeiconsIcon :icon="File02Icon" :size="24" />
+            </div>
+          </div>
           <div class="share-file-info">
             <span class="share-file-name">{{ file.filename }}</span>
             <span class="share-file-size">{{ formatSize(file.size) }}</span>
@@ -67,6 +80,15 @@ const totalSize = computed(() => {
         </div>
       </div>
     </div>
+
+    <!-- File preview modal -->
+    <FilePreview
+      v-if="previewFile"
+      :file="previewFile"
+      :download-base-url="`/api/shares/public/download`"
+      :download-url-suffix="`?token=${token}`"
+      @close="previewFile = null"
+    />
   </div>
 </template>
 
@@ -85,6 +107,37 @@ const totalSize = computed(() => {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   gap: var(--space-3);
+}
+
+.share-file-thumb {
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.thumbnail {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  transition: opacity var(--transition-fast);
+}
+
+.thumbnail:hover {
+  opacity: 0.75;
+}
+
+.file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.file-icon:hover {
+  color: var(--color-primary-500);
 }
 
 .share-file-info {

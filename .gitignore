@@ -11,8 +11,8 @@ dist
 .env.local
 
 # Data (user files and database)
-data/
-database/
+/data
+/database
 *.db
 
 # OS

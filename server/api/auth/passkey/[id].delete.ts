@@ -1,5 +1,4 @@
 import { eq, and } from 'drizzle-orm'
-import { passkeys, users } from '#db'
 
 export default defineEventHandler(async (event) => {
   const { user } = await requireAuth(event)

@@ -1,5 +1,4 @@
 import { eq } from 'drizzle-orm'
-import { users } from '#db'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)

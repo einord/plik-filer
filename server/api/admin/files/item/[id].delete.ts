@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm'
 import { join } from 'path'
-import { files } from '#db'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

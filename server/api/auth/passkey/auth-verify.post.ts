@@ -1,6 +1,5 @@
 import { verifyAuthenticationResponse } from '@simplewebauthn/server'
 import { eq } from 'drizzle-orm'
-import { passkeys, users } from '#db'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)

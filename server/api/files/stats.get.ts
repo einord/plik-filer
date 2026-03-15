@@ -1,5 +1,4 @@
 import { eq, and, sum, count } from 'drizzle-orm'
-import { files } from '#db'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)

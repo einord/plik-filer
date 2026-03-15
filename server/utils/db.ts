@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { existsSync, mkdirSync, renameSync } from 'fs'
 import { dirname, join } from 'path'
 import { randomUUID } from 'crypto'
-import * as schema from '#db'
+import * as schema from '../database/schema'
 
 let _db: ReturnType<typeof drizzle> | null = null
 let _sqlite: Database.Database | null = null

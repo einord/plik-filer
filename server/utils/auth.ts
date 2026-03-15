@@ -2,7 +2,6 @@ import bcrypt from 'bcrypt'
 import { nanoid } from 'nanoid'
 import type { H3Event } from 'h3'
 import { eq } from 'drizzle-orm'
-import { sessions, users } from '#db'
 
 const SALT_ROUNDS = 12
 const SESSION_DURATION_DAYS = 30

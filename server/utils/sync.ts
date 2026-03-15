@@ -2,7 +2,6 @@ import { readdirSync, renameSync, statSync } from 'fs'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
-import { files, users } from '#db'
 
 export async function syncUserFiles(userId: number) {
   const db = useDb()

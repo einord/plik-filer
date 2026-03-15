@@ -2,7 +2,6 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import { eq, inArray } from 'drizzle-orm'
 import archiver from 'archiver'
-import { files } from '#db'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

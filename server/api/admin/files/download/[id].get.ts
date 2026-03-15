@@ -1,7 +1,6 @@
 import { createReadStream, existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { eq } from 'drizzle-orm'
-import { files } from '#db'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

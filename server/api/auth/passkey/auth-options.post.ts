@@ -1,6 +1,5 @@
 import { generateAuthenticationOptions } from '@simplewebauthn/server'
 import { eq } from 'drizzle-orm'
-import { passkeys, users } from '#db'
 import { nanoid } from 'nanoid'
 
 export default defineEventHandler(async (event) => {

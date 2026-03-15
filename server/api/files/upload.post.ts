@@ -1,7 +1,6 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { eq, and, sum } from 'drizzle-orm'
-import { files } from '#db'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)

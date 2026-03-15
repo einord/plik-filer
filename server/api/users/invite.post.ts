@@ -1,5 +1,4 @@
 import { eq } from 'drizzle-orm'
-import { invitations, settings } from '#db'
 
 export default defineEventHandler(async (event) => {
   const session = await requireAdmin(event)

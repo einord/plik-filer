@@ -1,4 +1,3 @@
-import { invitations } from '#db'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

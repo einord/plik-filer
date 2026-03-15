@@ -1,5 +1,4 @@
 import { verifyRegistrationResponse } from '@simplewebauthn/server'
-import { passkeys } from '#db'
 
 export default defineEventHandler(async (event) => {
   const { user } = await requireAuth(event)

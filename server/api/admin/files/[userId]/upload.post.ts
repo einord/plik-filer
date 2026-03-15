@@ -1,7 +1,6 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { eq, and, sum } from 'drizzle-orm'
-import { files, users } from '#db'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

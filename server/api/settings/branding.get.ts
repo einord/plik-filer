@@ -1,5 +1,4 @@
 import { eq } from 'drizzle-orm'
-import { settings } from '#db'
 
 export default defineEventHandler(async () => {
   const db = useDb()

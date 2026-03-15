@@ -79,6 +79,7 @@ onMounted(async () => {
         </div>
 
         <p class="link-meta">
+          <span v-if="link.createdByName" class="link-owner">{{ link.createdByName }} · </span>
           {{ $t('share.expiresAt', { date: new Date(link.expiresAt).toLocaleDateString() }) }}
           · {{ link.files?.length || 0 }} {{ $t('files.files').toLowerCase() }}
         </p>
@@ -129,6 +130,11 @@ onMounted(async () => {
 .link-meta {
   font-size: var(--text-sm);
   color: var(--text-secondary);
+}
+
+.link-owner {
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .empty-state {

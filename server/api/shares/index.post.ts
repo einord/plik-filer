@@ -28,12 +28,18 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Select at least one file' })
   }
 
-  // Verify all files belong to the user
   const db = useDb()
+
+  // Admins can share files on behalf of other users
+  const targetUserId = body.targetUserId && session.user.role === 'admin'
+    ? Number(body.targetUserId)
+    : session.user.id
+
+  // Verify all files belong to the target user
   const userFiles = await db.select().from(files)
     .where(and(
       inArray(files.id, fileIds),
-      eq(files.userId, session.user.id),
+      eq(files.userId, targetUserId),
     ))
 
   if (userFiles.length !== fileIds.length) {
@@ -44,7 +50,7 @@ export default defineEventHandler(async (event) => {
   const resolvedFileIds: number[] = []
   for (const file of userFiles) {
     if (file.isDirectory) {
-      const nestedIds = await getFilesInFolder(db, file.id, session.user.id)
+      const nestedIds = await getFilesInFolder(db, file.id, targetUserId)
       resolvedFileIds.push(...nestedIds)
     } else {
       resolvedFileIds.push(file.id)

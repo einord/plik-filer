@@ -11,6 +11,8 @@ import {
   Tick02Icon,
   Alert02Icon,
   Loading03Icon,
+  Share08Icon,
+  Copy01Icon,
 } from '@hugeicons/core-free-icons'
 
 const { t } = useI18n()
@@ -43,6 +45,62 @@ const dragOver = ref(false)
 const error = ref('')
 const breadcrumbDropTarget = ref<number | null | undefined>(undefined)
 const previewFile = ref<FileItem | null>(null)
+
+// Share dialog state
+const showShareDialog = ref(false)
+const shareFileIds = ref<number[]>([])
+const shareLabel = ref('')
+const shareDaysValid = ref(7)
+const shareResult = ref<{ url: string } | null>(null)
+const shareLoading = ref(false)
+const shareCopied = ref(false)
+
+function openShareDialog(fileIds: number[]) {
+  shareFileIds.value = fileIds
+  shareLabel.value = ''
+  shareDaysValid.value = 7
+  shareResult.value = null
+  shareLoading.value = false
+  shareCopied.value = false
+  showShareDialog.value = true
+}
+
+async function createShareLink() {
+  if (!shareFileIds.value.length) return
+  shareLoading.value = true
+  try {
+    const data = await $fetch('/api/shares', {
+      method: 'POST',
+      body: {
+        fileIds: shareFileIds.value,
+        targetUserId: userId,
+        label: shareLabel.value || undefined,
+        daysValid: shareDaysValid.value,
+      },
+    })
+    if (data.shareLink?.url) {
+      shareResult.value = { url: data.shareLink.url }
+    }
+  } catch (e: any) {
+    error.value = e.data?.statusMessage || t('errors.serverError')
+  } finally {
+    shareLoading.value = false
+  }
+}
+
+async function copyShareUrl() {
+  if (!shareResult.value?.url) return
+  await navigator.clipboard.writeText(shareResult.value.url)
+  shareCopied.value = true
+}
+
+function closeShareDialog() {
+  showShareDialog.value = false
+  shareFileIds.value = []
+  shareResult.value = null
+  shareLoading.value = false
+  shareCopied.value = false
+}
 
 function getStatusIconComponent(status: string) {
   switch (status) {
@@ -401,6 +459,7 @@ onMounted(() => {
         :files="files"
         :selected-ids="selectedIds"
         :can-write="true"
+        :can-share="true"
         thumbnail-base-url="/api/admin/files/thumbnail"
         @toggle-select="toggleSelect"
         @toggle-select-all="toggleSelectAll"
@@ -409,6 +468,7 @@ onMounted(() => {
         @delete="deleteFile"
         @preview="previewFile = $event"
         @move-files="moveFiles"
+        @share="openShareDialog"
       />
 
       <!-- Empty state -->
@@ -421,7 +481,9 @@ onMounted(() => {
         v-if="selectedIds.size > 0"
         :count="selectedIds.size"
         :can-write="true"
+        :can-share="true"
         @download="downloadSelected"
+        @share="openShareDialog(Array.from(selectedIds))"
         @delete="deleteSelected"
         @deselect="selectedIds.clear()"
       />
@@ -431,6 +493,53 @@ onMounted(() => {
         <p>{{ $t('files.dragAndDrop') }}</p>
       </div>
     </div>
+
+    <!-- Share dialog -->
+    <PModal v-if="showShareDialog" @close="closeShareDialog">
+      <div class="modal-body">
+        <template v-if="!shareResult">
+          <h3 class="modal-title">{{ $t('share.sharingFiles', { count: shareFileIds.length }) }}</h3>
+
+          <div class="share-dialog-form">
+            <div class="form-group">
+              <label>{{ $t('share.label') }}</label>
+              <input v-model="shareLabel" type="text" :placeholder="$t('common.optional')" />
+            </div>
+
+            <div class="form-group">
+              <label>{{ $t('share.daysValid') }}</label>
+              <input v-model.number="shareDaysValid" type="number" min="1" max="90" />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <PBtn variant="ghost" size="sm" @click="closeShareDialog">
+              {{ $t('common.cancel') }}
+            </PBtn>
+            <PBtn size="sm" @click="createShareLink" :disabled="shareLoading">
+              {{ $t('share.createLink') }}
+            </PBtn>
+          </div>
+        </template>
+
+        <template v-else>
+          <h3 class="modal-title" style="color: var(--color-success);">{{ $t('share.linkReady') }}</h3>
+
+          <div class="share-link-result">
+            <input type="text" :value="shareResult.url" readonly class="share-link-input" />
+            <PBtn size="sm" :icon="Copy01Icon" @click="copyShareUrl">
+              {{ shareCopied ? $t('common.copied') : $t('common.copy') }}
+            </PBtn>
+          </div>
+
+          <div class="modal-actions">
+            <PBtn variant="ghost" size="sm" @click="closeShareDialog">
+              {{ $t('common.close') }}
+            </PBtn>
+          </div>
+        </template>
+      </div>
+    </PModal>
 
     <!-- File preview modal -->
     <FilePreview
@@ -622,5 +731,57 @@ onMounted(() => {
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   margin-bottom: var(--space-4);
+}
+
+.modal-body {
+  padding: var(--space-4);
+  min-width: 350px;
+}
+
+.modal-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.share-dialog-form {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.share-dialog-form .form-group {
+  flex: 1;
+  min-width: 160px;
+}
+
+.share-dialog-form .form-group label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-1);
+}
+
+.share-link-result {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.share-link-input {
+  flex: 1;
+  font-size: var(--text-sm);
+  background-color: var(--bg-secondary);
+  cursor: text;
 }
 </style>

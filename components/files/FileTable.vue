@@ -143,7 +143,7 @@ function formatSize(bytes: number): string {
 
       <div class="file-col-actions" @click.stop>
         <PBtn
-          v-if="canShare && !file.isDirectory && !file.missing"
+          v-if="canShare && !file.missing"
           variant="ghost"
           size="sm"
           :icon="Share08Icon"

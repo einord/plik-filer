@@ -16,6 +16,8 @@ const linkCopied = ref(false)
 const userStats = ref<Record<number, { totalFiles: number; totalUsed: number; maxFileSize: number }>>({})
 const editingQuotaUserId = ref<number | null>(null)
 const editQuotaValueGB = ref(100)
+const editingEmailUserId = ref<number | null>(null)
+const editEmailValue = ref('')
 const dashboardStats = ref<any>(null)
 
 function timeAgo(dateStr: string): string {
@@ -120,6 +122,33 @@ async function sendSetupLink(userId: number) {
       body: { sendEmail: true },
     })
     setupLinkResult.value = { url: data.setupUrl, userId, emailSent: data.emailSent }
+    await loadData()
+  } catch (e: any) {
+    error.value = e.data?.statusMessage || t('errors.serverError')
+  }
+}
+
+async function removeSetupLink(userId: number) {
+  try {
+    await $fetch(`/api/users/${userId}/setup-link`, { method: 'DELETE' })
+    await loadData()
+  } catch (e: any) {
+    error.value = e.data?.statusMessage || t('errors.serverError')
+  }
+}
+
+function startEditEmail(user: any) {
+  editingEmailUserId.value = user.id
+  editEmailValue.value = user.email || ''
+}
+
+async function saveEmail(userId: number) {
+  try {
+    await $fetch(`/api/users/${userId}`, {
+      method: 'PATCH',
+      body: { email: editEmailValue.value.trim() || null },
+    })
+    editingEmailUserId.value = null
     await loadData()
   } catch (e: any) {
     error.value = e.data?.statusMessage || t('errors.serverError')
@@ -332,7 +361,19 @@ onMounted(loadData)
                 </span>
               </div>
               <div style="font-size: var(--text-sm); color: var(--text-secondary);">
-                {{ u.email }}
+                <template v-if="editingEmailUserId === u.id">
+                  <div style="display: flex; align-items: center; gap: var(--space-1); margin-top: var(--space-1);">
+                    <input v-model="editEmailValue" type="email" style="font-size: var(--text-sm); padding: 2px 6px; width: 200px;" :placeholder="t('auth.email')" @keydown.enter="saveEmail(u.id)" @keydown.esc="editingEmailUserId = null" />
+                    <PBtn size="sm" @click="saveEmail(u.id)">{{ $t('common.save') }}</PBtn>
+                    <PBtn variant="ghost" size="sm" @click="editingEmailUserId = null">{{ $t('common.cancel') }}</PBtn>
+                  </div>
+                </template>
+                <template v-else>
+                  {{ u.email || '—' }}
+                  <PBtn v-if="!u.setupCompleted" variant="ghost" size="sm" style="margin-left: var(--space-1); font-size: var(--text-xs);" @click="startEditEmail(u)">
+                    {{ $t('common.edit') }}
+                  </PBtn>
+                </template>
               </div>
             </div>
 
@@ -387,6 +428,9 @@ onMounted(loadData)
               </PBtn>
               <PBtn v-if="!u.setupCompleted && u.email" variant="ghost" size="sm" :icon="SentIcon" @click="sendSetupLink(u.id)" :title="$t('admin.sendSetupLink')">
                 {{ $t('admin.sendSetupLink') }}
+              </PBtn>
+              <PBtn v-if="!u.setupCompleted && u.hasSetupToken" variant="ghost" size="sm" @click="removeSetupLink(u.id)">
+                {{ $t('admin.removeSetupLink') }}
               </PBtn>
               <PBtn variant="ghost" size="sm" :icon="Folder01Icon" :to="`/admin/users/${u.id}/files`" :title="$t('admin.manageFiles')">
                 {{ $t('admin.manageFiles') }}

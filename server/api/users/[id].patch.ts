@@ -19,6 +19,17 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDb()
+
+  // Validate email uniqueness if email is being changed
+  if (updates.email !== undefined && updates.email !== null) {
+    const [existing] = await db.select().from(users)
+      .where(eq(users.email, updates.email))
+      .limit(1)
+    if (existing && existing.id !== id) {
+      throw createError({ statusCode: 400, statusMessage: 'Email already registered' })
+    }
+  }
+
   await db.update(users).set(updates).where(eq(users.id, id))
 
   const [updated] = await db.select().from(users).where(eq(users.id, id)).limit(1)

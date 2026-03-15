@@ -18,7 +18,8 @@
     "optional": "Optional",
     "required": "Required",
     "copy": "Copy",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "edit": "Edit"
   },
   "auth": {
     "login": "Log in",
@@ -126,7 +127,8 @@
     "awaitingSetup": "Awaiting setup",
     "setupCompleted": "Registered",
     "generateNewLink": "Generate new link",
-    "setupAlreadyCompleted": "User has already completed setup"
+    "setupAlreadyCompleted": "User has already completed setup",
+    "removeSetupLink": "Remove setup link"
   },
   "files": {
     "files": "Files",

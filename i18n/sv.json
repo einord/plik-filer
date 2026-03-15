@@ -18,7 +18,8 @@
     "optional": "Valfritt",
     "required": "Obligatoriskt",
     "copy": "Kopiera",
-    "copied": "Kopierat!"
+    "copied": "Kopierat!",
+    "edit": "Redigera"
   },
   "auth": {
     "login": "Logga in",
@@ -126,7 +127,8 @@
     "awaitingSetup": "Inväntar setup",
     "setupCompleted": "Registrerad",
     "generateNewLink": "Generera ny länk",
-    "setupAlreadyCompleted": "Användaren har redan slutfört sin setup"
+    "setupAlreadyCompleted": "Användaren har redan slutfört sin setup",
+    "removeSetupLink": "Ta bort setup-länk"
   },
   "files": {
     "files": "Filer",

@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
     maxFileSize: users.maxFileSize,
     createdAt: users.createdAt,
     passwordHash: users.passwordHash,
+    setupToken: users.setupToken,
   }).from(users)
 
   return {
@@ -28,7 +29,8 @@ export default defineEventHandler(async (event) => {
       canWrite: u.canWrite,
       maxFileSize: u.maxFileSize,
       createdAt: u.createdAt,
-      setupCompleted: !!(u.email && u.passwordHash),
+      setupCompleted: !!u.passwordHash,
+      hasSetupToken: !!u.setupToken,
     })),
   }
 })

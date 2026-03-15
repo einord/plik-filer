@@ -156,6 +156,44 @@ function runMigrations(sqlite: Database.Database) {
     // Index already exists
   }
 
+  // Migrate users table to allow NULL email (SQLite requires table recreation)
+  try {
+    const hasNotNull = sqlite.prepare(
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name='users'"
+    ).get() as { sql: string } | undefined
+    if (hasNotNull?.sql?.includes('email TEXT UNIQUE NOT NULL')) {
+      sqlite.pragma('foreign_keys = OFF')
+      sqlite.exec(`DROP TABLE IF EXISTS users_new`)
+      sqlite.exec(`
+        CREATE TABLE users_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT UNIQUE,
+          name TEXT NOT NULL,
+          password_hash TEXT,
+          role TEXT NOT NULL DEFAULT 'user',
+          is_active INTEGER NOT NULL DEFAULT 1,
+          max_file_size INTEGER NOT NULL DEFAULT 107374182400,
+          can_read INTEGER NOT NULL DEFAULT 1,
+          can_write INTEGER NOT NULL DEFAULT 1,
+          locale TEXT NOT NULL DEFAULT 'sv',
+          theme TEXT NOT NULL DEFAULT 'auto',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT,
+          setup_token TEXT UNIQUE,
+          setup_token_expires_at TEXT
+        );
+        INSERT INTO users_new SELECT * FROM users;
+        DROP TABLE users;
+        ALTER TABLE users_new RENAME TO users;
+        CREATE INDEX IF NOT EXISTS idx_users_setup_token ON users(setup_token);
+      `)
+      sqlite.pragma('foreign_keys = ON')
+      console.log('[migration] Migrated users table to allow NULL email')
+    }
+  } catch (e) {
+    console.error('[migration] Failed to migrate users table:', e)
+  }
+
   // Migrate existing files to UUID-based storage names
   try {
     const filesToMigrate = sqlite.prepare(

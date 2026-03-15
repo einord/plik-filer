@@ -1,4 +1,5 @@
-import { users } from '../../database/schema'
+import { eq } from 'drizzle-orm'
+import { users, passkeys } from '../../database/schema'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
@@ -18,6 +19,10 @@ export default defineEventHandler(async (event) => {
     setupToken: users.setupToken,
   }).from(users)
 
+  // Check which users have passkeys
+  const allPasskeys = await db.select({ userId: passkeys.userId }).from(passkeys)
+  const usersWithPasskeys = new Set(allPasskeys.map(p => p.userId))
+
   return {
     users: allUsers.map(u => ({
       id: u.id,
@@ -29,7 +34,7 @@ export default defineEventHandler(async (event) => {
       canWrite: u.canWrite,
       maxFileSize: u.maxFileSize,
       createdAt: u.createdAt,
-      setupCompleted: !!u.passwordHash,
+      setupCompleted: !!u.passwordHash || usersWithPasskeys.has(u.id),
       hasSetupToken: !!u.setupToken,
     })),
   }

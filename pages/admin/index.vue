@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { HugeiconsIcon } from '@hugeicons/vue'
-import { Delete02Icon, Settings02Icon, UserAdd01Icon, Folder01Icon, UserMultipleIcon, File02Icon, DatabaseIcon, Link04Icon, SentIcon, Copy01Icon } from '@hugeicons/core-free-icons'
+import { Delete02Icon, Settings02Icon, UserAdd01Icon, Folder01Icon, UserMultipleIcon, File02Icon, DatabaseIcon, Link04Icon, SentIcon, Copy01Icon, Cancel01Icon, ViewIcon, ViewOffIcon, Upload04Icon, Edit02Icon } from '@hugeicons/core-free-icons'
 
 const { t } = useI18n()
 
@@ -16,8 +16,8 @@ const linkCopied = ref(false)
 const userStats = ref<Record<number, { totalFiles: number; totalUsed: number; maxFileSize: number }>>({})
 const editingQuotaUserId = ref<number | null>(null)
 const editQuotaValueGB = ref(100)
-const editingEmailUserId = ref<number | null>(null)
-const editEmailValue = ref('')
+const editingUser = ref<any | null>(null)
+const editForm = ref({ name: '', email: '', canRead: true, canWrite: true })
 const dashboardStats = ref<any>(null)
 
 function timeAgo(dateStr: string): string {
@@ -137,18 +137,32 @@ async function removeSetupLink(userId: number) {
   }
 }
 
-function startEditEmail(user: any) {
-  editingEmailUserId.value = user.id
-  editEmailValue.value = user.email || ''
+function openEditUser(user: any) {
+  editingUser.value = user
+  editForm.value = {
+    name: user.name,
+    email: user.email || '',
+    canRead: user.canRead,
+    canWrite: user.canWrite,
+  }
 }
 
-async function saveEmail(userId: number) {
+async function saveEditUser() {
+  if (!editingUser.value) return
   try {
-    await $fetch(`/api/users/${userId}`, {
+    const body: Record<string, any> = {
+      canRead: editForm.value.canRead,
+      canWrite: editForm.value.canWrite,
+    }
+    if (!editingUser.value.setupCompleted) {
+      body.name = editForm.value.name.trim()
+      body.email = editForm.value.email.trim() || null
+    }
+    await $fetch(`/api/users/${editingUser.value.id}`, {
       method: 'PATCH',
-      body: { email: editEmailValue.value.trim() || null },
+      body,
     })
-    editingEmailUserId.value = null
+    editingUser.value = null
     await loadData()
   } catch (e: any) {
     error.value = e.data?.statusMessage || t('errors.serverError')
@@ -298,41 +312,93 @@ onMounted(loadData)
     </div>
 
     <!-- Create user dialog -->
-    <div v-if="showCreateUser" class="card" style="margin-bottom: var(--space-4);">
-      <h3 style="margin-bottom: var(--space-3);">{{ $t('admin.createUserDirect') }}</h3>
-      <div class="form-group">
-        <label>{{ $t('auth.name') }} *</label>
-        <input v-model="newUserName" type="text" :placeholder="t('auth.name')" />
+    <PModal v-if="showCreateUser" @close="showCreateUser = false">
+      <div class="modal-body">
+        <h3 class="modal-title">{{ $t('admin.createUserDirect') }}</h3>
+        <div class="form-group">
+          <label>{{ $t('auth.name') }} *</label>
+          <input v-model="newUserName" type="text" :placeholder="t('auth.name')" />
+        </div>
+        <div class="form-group">
+          <label>{{ $t('auth.email') }} ({{ $t('common.optional') }})</label>
+          <input v-model="newUserEmail" type="email" :placeholder="t('auth.email')" />
+        </div>
+        <div class="modal-actions">
+          <PBtn variant="ghost" size="sm" @click="showCreateUser = false">
+            {{ $t('common.cancel') }}
+          </PBtn>
+          <PBtn size="sm" :disabled="createUserLoading || !newUserName.trim()" @click="createUserDirect">
+            {{ createUserLoading ? $t('common.loading') : $t('admin.createUserDirect') }}
+          </PBtn>
+        </div>
       </div>
-      <div class="form-group">
-        <label>{{ $t('auth.email') }} ({{ $t('common.optional') }})</label>
-        <input v-model="newUserEmail" type="email" :placeholder="t('auth.email')" />
+    </PModal>
+
+    <!-- Edit user modal -->
+    <PModal v-if="editingUser" @close="editingUser = null">
+      <div class="modal-body">
+        <h3 class="modal-title">{{ $t('admin.editUser') }}: {{ editingUser.name }}</h3>
+
+        <div class="form-group">
+          <label>{{ $t('auth.name') }}</label>
+          <input v-model="editForm.name" type="text" :disabled="editingUser.setupCompleted" />
+        </div>
+
+        <div class="form-group">
+          <label>{{ $t('auth.email') }}</label>
+          <input v-model="editForm.email" type="email" :placeholder="$t('common.optional')" :disabled="editingUser.setupCompleted" />
+        </div>
+
+        <div class="form-group">
+          <label class="permission-toggle">
+            <input type="checkbox" v-model="editForm.canRead" />
+            <span>{{ $t('admin.canRead') }}</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="permission-toggle">
+            <input type="checkbox" v-model="editForm.canWrite" />
+            <span>{{ $t('admin.canWrite') }}</span>
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <PBtn variant="danger" size="sm" :icon="Delete02Icon" @click="deleteUser(editingUser.id); editingUser = null">
+            {{ $t('common.delete') }}
+          </PBtn>
+          <div class="modal-actions">
+            <PBtn variant="ghost" size="sm" @click="toggleUser(editingUser.id, editingUser.isActive); editingUser = null">
+              {{ editingUser.isActive ? $t('admin.deactivateUser') : $t('admin.activateUser') }}
+            </PBtn>
+            <PBtn variant="ghost" size="sm" @click="editingUser = null">
+              {{ $t('common.cancel') }}
+            </PBtn>
+            <PBtn size="sm" @click="saveEditUser">
+              {{ $t('common.save') }}
+            </PBtn>
+          </div>
+        </div>
       </div>
-      <div style="display: flex; gap: var(--space-2);">
-        <PBtn size="sm" :disabled="createUserLoading || !newUserName.trim()" @click="createUserDirect">
-          {{ createUserLoading ? $t('common.loading') : $t('admin.createUserDirect') }}
-        </PBtn>
-        <PBtn variant="ghost" size="sm" @click="showCreateUser = false">
-          {{ $t('common.cancel') }}
-        </PBtn>
-      </div>
-    </div>
+    </PModal>
 
     <!-- Setup link result -->
-    <div v-if="setupLinkResult" class="card" style="margin-bottom: var(--space-4);">
-      <p style="font-size: var(--text-sm); color: var(--color-success); margin-bottom: var(--space-2);">
-        {{ setupLinkResult.emailSent ? $t('admin.setupLinkSent') : $t('admin.setupLinkGenerated') }}
-      </p>
-      <code style="font-size: var(--text-xs); word-break: break-all;">{{ setupLinkResult.url }}</code>
-      <div style="display: flex; gap: var(--space-2); margin-top: var(--space-2);">
-        <PBtn size="sm" :icon="Copy01Icon" @click="copyToClipboard(setupLinkResult.url)">
-          {{ linkCopied ? $t('common.copied') : $t('share.copyLink') }}
-        </PBtn>
-        <PBtn variant="ghost" size="sm" @click="setupLinkResult = null">
-          {{ $t('common.close') }}
-        </PBtn>
+    <PModal v-if="setupLinkResult" @close="setupLinkResult = null">
+      <div class="modal-body">
+        <h3 class="modal-title">
+          {{ setupLinkResult.emailSent ? $t('admin.setupLinkSent') : $t('admin.setupLinkGenerated') }}
+        </h3>
+        <code style="font-size: var(--text-xs); word-break: break-all; display: block; padding: var(--space-3); background: var(--bg-secondary); border-radius: var(--radius-md);">{{ setupLinkResult.url }}</code>
+        <div class="modal-actions">
+          <PBtn variant="ghost" size="sm" @click="setupLinkResult = null">
+            {{ $t('common.close') }}
+          </PBtn>
+          <PBtn size="sm" :icon="Copy01Icon" @click="copyToClipboard(setupLinkResult.url)">
+            {{ linkCopied ? $t('common.copied') : $t('share.copyLink') }}
+          </PBtn>
+        </div>
       </div>
-    </div>
+    </PModal>
 
     <!-- Users list -->
     <div class="card" v-if="!loading">
@@ -345,35 +411,27 @@ onMounted(loadData)
       </div>
 
       <div v-else class="users-list">
-        <div v-for="u in users" :key="u.id" class="user-row">
+        <div v-for="u in users" :key="u.id" class="user-row" :class="{ 'user-inactive': !u.isActive }">
           <div class="user-row-top">
             <div class="user-info">
-              <div>
+              <div class="user-name-row">
                 <strong>{{ u.name }}</strong>
-                <span class="badge" :class="u.role === 'admin' ? 'badge-info' : 'badge-success'" style="margin-left: var(--space-2);">
+                <span class="badge" :class="u.role === 'admin' ? 'badge-info' : 'badge-success'">
                   {{ u.role }}
                 </span>
-                <span v-if="!u.isActive" class="badge badge-error" style="margin-left: var(--space-1);">
+                <span v-if="!u.isActive" class="badge badge-error">
                   {{ $t('share.inactive') }}
                 </span>
-                <span v-if="!u.setupCompleted && u.role !== 'admin'" class="badge badge-warning" style="margin-left: var(--space-1);">
+                <span v-if="!u.setupCompleted && u.role !== 'admin'" class="badge badge-warning">
                   {{ $t('admin.awaitingSetup') }}
+                </span>
+                <span v-if="u.role !== 'admin'" class="permission-icons">
+                  <HugeiconsIcon :icon="u.canRead ? ViewIcon : ViewOffIcon" :size="14" :title="u.canRead ? $t('admin.canRead') : $t('admin.cannotRead')" :class="u.canRead ? 'perm-on' : 'perm-off'" />
+                  <HugeiconsIcon :icon="Upload04Icon" :size="14" :title="u.canWrite ? $t('admin.canWrite') : $t('admin.cannotWrite')" :class="u.canWrite ? 'perm-on' : 'perm-off'" />
                 </span>
               </div>
               <div style="font-size: var(--text-sm); color: var(--text-secondary);">
-                <template v-if="editingEmailUserId === u.id">
-                  <div style="display: flex; align-items: center; gap: var(--space-1); margin-top: var(--space-1);">
-                    <input v-model="editEmailValue" type="email" style="font-size: var(--text-sm); padding: 2px 6px; width: 200px;" :placeholder="t('auth.email')" @keydown.enter="saveEmail(u.id)" @keydown.esc="editingEmailUserId = null" />
-                    <PBtn size="sm" @click="saveEmail(u.id)">{{ $t('common.save') }}</PBtn>
-                    <PBtn variant="ghost" size="sm" @click="editingEmailUserId = null">{{ $t('common.cancel') }}</PBtn>
-                  </div>
-                </template>
-                <template v-else>
-                  {{ u.email || '—' }}
-                  <PBtn v-if="!u.setupCompleted" variant="ghost" size="sm" style="margin-left: var(--space-1); font-size: var(--text-xs);" @click="startEditEmail(u)">
-                    {{ $t('common.edit') }}
-                  </PBtn>
-                </template>
+                {{ u.email || '—' }}
               </div>
             </div>
 
@@ -411,38 +469,25 @@ onMounted(loadData)
           </div>
 
           <div class="user-row-bottom" v-if="u.role !== 'admin'">
-            <div class="user-permissions">
-              <label class="permission-toggle">
-                <input type="checkbox" :checked="u.canRead" @change="updatePermissions(u.id, 'canRead', !u.canRead)" />
-                <span>{{ $t('admin.canRead') }}</span>
-              </label>
-              <label class="permission-toggle">
-                <input type="checkbox" :checked="u.canWrite" @change="updatePermissions(u.id, 'canWrite', !u.canWrite)" />
-                <span>{{ $t('admin.canWrite') }}</span>
-              </label>
-            </div>
-
             <div class="user-actions">
-              <PBtn v-if="!u.setupCompleted" variant="ghost" size="sm" :icon="Copy01Icon" @click="copySetupLink(u.id)" :title="$t('admin.copySetupLink')">
-                {{ $t('admin.copySetupLink') }}
+              <PBtn variant="ghost" size="sm" :icon="Edit02Icon" @click="openEditUser(u)">
+                {{ $t('common.edit') }}
               </PBtn>
-              <PBtn v-if="!u.setupCompleted && u.email" variant="ghost" size="sm" :icon="SentIcon" @click="sendSetupLink(u.id)" :title="$t('admin.sendSetupLink')">
-                {{ $t('admin.sendSetupLink') }}
-              </PBtn>
-              <PBtn v-if="!u.setupCompleted && u.hasSetupToken" variant="ghost" size="sm" @click="removeSetupLink(u.id)">
-                {{ $t('admin.removeSetupLink') }}
-              </PBtn>
+              <PDropdown v-if="!u.setupCompleted" :icon="Link04Icon">
+                <template #trigger>{{ $t('admin.setupLink') }}</template>
+                <PDropdownItem :icon="Copy01Icon" @click="copySetupLink(u.id)">
+                  {{ $t('admin.copySetupLink') }}
+                </PDropdownItem>
+                <PDropdownItem v-if="u.email" :icon="SentIcon" @click="sendSetupLink(u.id)">
+                  {{ $t('admin.sendSetupLink') }}
+                </PDropdownItem>
+                <PDropdownItem v-if="u.hasSetupToken" :icon="Cancel01Icon" danger @click="removeSetupLink(u.id)">
+                  {{ $t('admin.removeSetupLink') }}
+                </PDropdownItem>
+              </PDropdown>
               <PBtn variant="ghost" size="sm" :icon="Folder01Icon" :to="`/admin/users/${u.id}/files`" :title="$t('admin.manageFiles')">
                 {{ $t('admin.manageFiles') }}
               </PBtn>
-              <PBtn
-                variant="ghost"
-                size="sm"
-                @click="toggleUser(u.id, u.isActive)"
-              >
-                {{ u.isActive ? $t('admin.deactivateUser') : $t('admin.activateUser') }}
-              </PBtn>
-              <PBtn variant="ghost" size="sm" :icon="Delete02Icon" icon-only @click="deleteUser(u.id)" :title="$t('common.delete')" />
             </div>
           </div>
 
@@ -490,6 +535,10 @@ onMounted(loadData)
 
 .user-row:last-child { border-bottom: none; }
 
+.user-row.user-inactive {
+  opacity: 0.5;
+}
+
 .user-row-top {
   display: flex;
   align-items: center;
@@ -508,9 +557,27 @@ onMounted(loadData)
 
 .user-info { flex: 1; min-width: 200px; }
 
-.user-permissions {
+.user-name-row {
   display: flex;
-  gap: var(--space-4);
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.permission-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: var(--space-1);
+}
+
+.perm-on {
+  color: var(--color-success, #22c55e);
+}
+
+.perm-off {
+  color: var(--text-tertiary);
+  opacity: 0.4;
 }
 
 .permission-toggle {
@@ -713,6 +780,32 @@ onMounted(loadData)
   color: var(--text-tertiary, var(--text-secondary));
   min-width: 80px;
   text-align: right;
+}
+
+.modal-body {
+  padding: var(--space-4);
+  min-width: 350px;
+}
+
+.modal-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-color);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
 
 .empty-state { text-align: center; padding: var(--space-8); color: var(--text-secondary); }

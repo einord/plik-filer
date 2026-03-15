@@ -88,6 +88,8 @@
     "permissions": "Permissions",
     "canRead": "Can read files",
     "canWrite": "Can upload files",
+    "cannotRead": "Cannot read files",
+    "cannotWrite": "Cannot upload files",
     "maxFileSize": "Max file size",
     "activeUsers": "Active users",
     "totalFiles": "Total files",
@@ -128,7 +130,8 @@
     "setupCompleted": "Registered",
     "generateNewLink": "Generate new link",
     "setupAlreadyCompleted": "User has already completed setup",
-    "removeSetupLink": "Remove setup link"
+    "removeSetupLink": "Remove setup link",
+    "setupLink": "Setup link"
   },
   "files": {
     "files": "Files",

@@ -88,6 +88,8 @@
     "permissions": "Behörigheter",
     "canRead": "Kan läsa filer",
     "canWrite": "Kan ladda upp filer",
+    "cannotRead": "Kan inte läsa filer",
+    "cannotWrite": "Kan inte ladda upp filer",
     "maxFileSize": "Max filstorlek",
     "activeUsers": "Aktiva användare",
     "totalFiles": "Totalt antal filer",
@@ -128,7 +130,8 @@
     "setupCompleted": "Registrerad",
     "generateNewLink": "Generera ny länk",
     "setupAlreadyCompleted": "Användaren har redan slutfört sin setup",
-    "removeSetupLink": "Ta bort setup-länk"
+    "removeSetupLink": "Ta bort setup-länk",
+    "setupLink": "Setup-länk"
   },
   "files": {
     "files": "Filer",

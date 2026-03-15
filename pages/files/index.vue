@@ -454,49 +454,51 @@ onMounted(() => {
     />
 
     <!-- Share dialog -->
-    <div v-if="showShareDialog" class="share-dialog card">
-      <template v-if="!shareResult">
-        <h3 class="share-dialog-title">{{ $t('share.sharingFiles', { count: shareFileIds.length }) }}</h3>
+    <PModal v-if="showShareDialog" @close="closeShareDialog">
+      <div class="modal-body">
+        <template v-if="!shareResult">
+          <h3 class="modal-title">{{ $t('share.sharingFiles', { count: shareFileIds.length }) }}</h3>
 
-        <div class="share-dialog-form">
-          <div class="form-group">
-            <label>{{ $t('share.label') }}</label>
-            <input v-model="shareLabel" type="text" :placeholder="$t('common.optional')" />
+          <div class="share-dialog-form">
+            <div class="form-group">
+              <label>{{ $t('share.label') }}</label>
+              <input v-model="shareLabel" type="text" :placeholder="$t('common.optional')" />
+            </div>
+
+            <div class="form-group">
+              <label>{{ $t('share.daysValid') }}</label>
+              <input v-model.number="shareDaysValid" type="number" min="1" max="90" />
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>{{ $t('share.daysValid') }}</label>
-            <input v-model.number="shareDaysValid" type="number" min="1" max="90" />
+          <div class="modal-actions">
+            <PBtn variant="ghost" size="sm" @click="closeShareDialog">
+              {{ $t('common.cancel') }}
+            </PBtn>
+            <PBtn size="sm" @click="createShareLink" :disabled="shareLoading">
+              {{ $t('share.createLink') }}
+            </PBtn>
           </div>
-        </div>
+        </template>
 
-        <div class="share-dialog-actions">
-          <PBtn size="sm" @click="createShareLink" :disabled="shareLoading">
-            {{ $t('share.createLink') }}
-          </PBtn>
-          <PBtn variant="ghost" size="sm" @click="closeShareDialog">
-            {{ $t('common.cancel') }}
-          </PBtn>
-        </div>
-      </template>
+        <template v-else>
+          <h3 class="modal-title" style="color: var(--color-success);">{{ $t('share.linkReady') }}</h3>
 
-      <template v-else>
-        <h3 class="share-dialog-title share-dialog-success">{{ $t('share.linkReady') }}</h3>
+          <div class="share-link-result">
+            <input type="text" :value="shareResult.url" readonly class="share-link-input" />
+            <PBtn size="sm" :icon="Copy01Icon" @click="copyShareUrl">
+              {{ shareCopied ? $t('common.copied') : $t('common.copy') }}
+            </PBtn>
+          </div>
 
-        <div class="share-link-result">
-          <input type="text" :value="shareResult.url" readonly class="share-link-input" />
-          <PBtn size="sm" :icon="Copy01Icon" @click="copyShareUrl">
-            {{ shareCopied ? $t('common.copied') : $t('common.copy') }}
-          </PBtn>
-        </div>
-
-        <div class="share-dialog-actions">
-          <PBtn variant="ghost" size="sm" @click="closeShareDialog">
-            {{ $t('common.close') }}
-          </PBtn>
-        </div>
-      </template>
-    </div>
+          <div class="modal-actions">
+            <PBtn variant="ghost" size="sm" @click="closeShareDialog">
+              {{ $t('common.close') }}
+            </PBtn>
+          </div>
+        </template>
+      </div>
+    </PModal>
 
     <!-- Error -->
     <div v-if="error" class="error-message">
@@ -849,19 +851,22 @@ onMounted(() => {
   margin-bottom: var(--space-4);
 }
 
-.share-dialog {
+.modal-body {
   padding: var(--space-4);
-  margin-bottom: var(--space-4);
+  min-width: 350px;
 }
 
-.share-dialog-title {
+.modal-title {
   font-size: var(--text-base);
   font-weight: 600;
   margin-bottom: var(--space-3);
 }
 
-.share-dialog-success {
-  color: var(--color-success);
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 .share-dialog-form {
@@ -882,11 +887,6 @@ onMounted(() => {
   font-weight: 500;
   color: var(--text-secondary);
   margin-bottom: var(--space-1);
-}
-
-.share-dialog-actions {
-  display: flex;
-  gap: var(--space-2);
 }
 
 .share-link-result {

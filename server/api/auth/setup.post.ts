@@ -55,6 +55,12 @@ export default defineEventHandler(async (event) => {
       email,
       name: user.name,
       role: user.role,
+      isActive: user.isActive,
+      canRead: user.canRead,
+      canWrite: user.canWrite,
+      locale: user.locale,
+      theme: user.theme,
+      maxFileSize: user.maxFileSize,
     },
   }
 })

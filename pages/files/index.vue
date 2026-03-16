@@ -108,13 +108,6 @@ async function loadStorageStats() {
   }
 }
 
-function formatSize(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
-}
-
 // Register callback for when all uploads finish
 onAllComplete(async () => {
   await loadFiles(currentFolderId.value)
@@ -338,19 +331,11 @@ onMounted(() => {
     </div>
 
     <!-- Storage usage indicator -->
-    <div v-if="storageStats" class="storage-indicator" :class="{ 'storage-warn': storageStats.percentage >= 90 && storageStats.percentage < 95, 'storage-error': storageStats.percentage >= 95 }">
-      <div class="storage-info">
-        <span class="storage-text">{{ $t('files.storageUsed', { used: formatSize(storageStats.totalUsed), total: formatSize(storageStats.maxAllowed) }) }}</span>
-        <span v-if="storageStats.percentage >= 90" class="storage-warning-text">{{ $t('files.storageAlmostFull') }}</span>
-      </div>
-      <div class="storage-progress-bar">
-        <div
-          class="storage-progress-fill"
-          :class="{ 'fill-warn': storageStats.percentage >= 90 && storageStats.percentage < 95, 'fill-error': storageStats.percentage >= 95 }"
-          :style="{ width: `${Math.min(storageStats.percentage, 100)}%` }"
-        />
-      </div>
-    </div>
+    <StorageIndicator
+      v-if="storageStats"
+      :total-used="storageStats.totalUsed"
+      :max-allowed="storageStats.maxAllowed"
+    />
 
     <!-- Upload progress list -->
     <div v-if="uploads.size > 0" class="upload-progress-list">
@@ -621,65 +606,6 @@ onMounted(() => {
 .page-actions {
   display: flex;
   gap: var(--space-2);
-}
-
-.storage-indicator {
-  margin-bottom: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  background-color: var(--bg-secondary);
-  border-radius: var(--radius-md);
-}
-
-.storage-indicator.storage-warn {
-  background-color: rgba(245, 158, 11, 0.08);
-}
-
-.storage-indicator.storage-error {
-  background-color: rgba(239, 68, 68, 0.08);
-}
-
-.storage-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-1);
-}
-
-.storage-text {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-}
-
-.storage-warning-text {
-  font-size: var(--text-xs);
-  font-weight: 500;
-  color: var(--color-warning);
-}
-
-.storage-error .storage-warning-text {
-  color: var(--color-error);
-}
-
-.storage-progress-bar {
-  height: 4px;
-  background-color: var(--bg-tertiary);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.storage-progress-fill {
-  height: 100%;
-  background-color: var(--color-primary-500);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-.storage-progress-fill.fill-warn {
-  background-color: var(--color-warning);
-}
-
-.storage-progress-fill.fill-error {
-  background-color: var(--color-error);
 }
 
 .upload-progress-list {

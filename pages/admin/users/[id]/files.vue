@@ -45,6 +45,7 @@ const dragOver = ref(false)
 const error = ref('')
 const breadcrumbDropTarget = ref<number | null | undefined>(undefined)
 const previewFile = ref<FileItem | null>(null)
+const storageStats = ref<{ totalFiles: number; totalUsed: number; maxAllowed: number; percentage: number } | null>(null)
 
 // Share dialog state
 const showShareDialog = ref(false)
@@ -100,6 +101,22 @@ function closeShareDialog() {
   shareResult.value = null
   shareLoading.value = false
   shareCopied.value = false
+}
+
+async function loadStorageStats() {
+  try {
+    const data = await $fetch(`/api/users/${userId}/stats`)
+    const totalUsed = data.totalUsed
+    const maxAllowed = data.maxFileSize
+    storageStats.value = {
+      totalFiles: data.totalFiles,
+      totalUsed,
+      maxAllowed,
+      percentage: maxAllowed > 0 ? (totalUsed / maxAllowed) * 100 : 0,
+    }
+  } catch {
+    // Silently fail - storage indicator is non-critical
+  }
 }
 
 function getStatusIconComponent(status: string) {
@@ -169,6 +186,7 @@ async function doUpload(fileList: File[]) {
 // Register callback for when all uploads finish
 onAllComplete(async () => {
   await loadFiles(currentFolderId.value)
+  await loadStorageStats()
   setTimeout(() => clearUploads(), 3000)
 })
 
@@ -197,6 +215,7 @@ async function deleteFile(file: FileItem) {
   try {
     await $fetch(`/api/admin/files/item/${file.id}`, { method: 'DELETE' })
     await loadFiles(currentFolderId.value)
+    await loadStorageStats()
     selectedIds.value.delete(file.id)
   } catch (e: any) {
     error.value = e.data?.statusMessage || t('errors.serverError')
@@ -218,6 +237,7 @@ async function deleteSelected() {
     }
     selectedIds.value.clear()
     await loadFiles(currentFolderId.value)
+    await loadStorageStats()
   } catch (e: any) {
     error.value = e.data?.statusMessage || t('errors.serverError')
   }
@@ -276,6 +296,7 @@ function toggleSelectAll() {
 
 onMounted(() => {
   loadFiles()
+  loadStorageStats()
 })
 </script>
 
@@ -332,6 +353,13 @@ onMounted(() => {
         <input ref="fileInputEl" type="file" multiple hidden @change="handleFileUpload" />
       </div>
     </div>
+
+    <!-- Storage usage indicator -->
+    <StorageIndicator
+      v-if="storageStats"
+      :total-used="storageStats.totalUsed"
+      :max-allowed="storageStats.maxAllowed"
+    />
 
     <!-- Upload progress list -->
     <div v-if="uploads.size > 0" class="upload-progress-list">
